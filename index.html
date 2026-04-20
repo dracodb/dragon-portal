@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- YOUR PREMIUM DESIGN STYLES --- */
         :root {
             --red: #880b18; --gold: #ffcf00; --dark: #0f0f0f; --surface: #1e1e1e;
             --border: rgba(255,255,255,0.08); --text: #f0ede8; --text-dim: #9a9590;
@@ -15,25 +14,27 @@
         }
         body { background: var(--dark); color: var(--text); font-family: var(--font-body); margin: 0; overflow-x: hidden; }
         
-        /* Layout */
+        /* Login Overlay */
         .login-overlay { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; align-items: center; justify-content: center; }
-        .app-container { display: none; min-height: 100vh; flex-direction: row; }
+        .login-card { background: var(--surface); padding: 40px; border-radius: 20px; border: 1px solid var(--border); width: 320px; text-align: center; }
         
-        /* Sidebar & Navigation */
+        /* Layout */
+        .app-container { display: none; min-height: 100vh; flex-direction: row; }
         .sidebar { width: 240px; background: #111; border-right: 1px solid var(--border); padding: 20px; flex-shrink: 0; }
         .nav-item { padding: 12px; cursor: pointer; color: var(--text-dim); transition: 0.2s; border-radius: 8px; margin-bottom: 5px; }
         .nav-item.active { background: rgba(136,11,24,0.2); color: var(--gold); border-left: 3px solid var(--gold); }
         
-        /* Exam UI */
+        /* Elements */
         .main-content { flex: 1; padding: 40px; }
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
-        .btn { background: var(--red); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-family: var(--font-head); cursor: pointer; font-weight: bold; }
-        .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        .btn { background: var(--red); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-family: var(--font-head); cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 10px; box-sizing: border-box; outline: none; }
+        .input-dark:focus { border-color: var(--gold); }
         
         .page { display: none; }
         .page.active { display: block; }
 
-        /* Flame Logo */
         .logo-flame { width: 40px; height: 40px; background: var(--red); border-radius: 8px; margin: 0 auto 10px; position: relative; }
         .logo-flame::after { content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 15px solid var(--gold); }
     </style>
@@ -41,46 +42,61 @@
 <body>
 
     <div id="login-overlay" class="login-overlay">
-        <div style="background: var(--surface); padding: 40px; border-radius: 20px; border: 1px solid var(--border); width: 320px; text-align: center;">
+        <div class="login-card">
             <div class="logo-flame"></div>
             <h2 style="font-family: var(--font-head); margin: 0;">FLAMING DRAGON</h2>
             <p style="font-size: 10px; color: var(--gold); letter-spacing: 2px; margin-bottom: 25px;">STUDENT PORTAL</p>
-            <input type="email" id="student-email" class="input-dark" placeholder="Enter Registered Email">
-            <button class="btn" style="width: 100%" onclick="portalLogin()">ACCESS PORTAL</button>
+            
+            <input type="email" id="student-email" class="input-dark" placeholder="Email Address">
+            <input type="password" id="student-password" class="input-dark" placeholder="Password">
+            
+            <button id="login-btn" class="btn" onclick="portalLogin()">ACCESS PORTAL</button>
         </div>
     </div>
 
     <div id="app" class="app-container">
         <aside class="sidebar">
             <h3 style="font-family: var(--font-head); color: var(--text);">FLAMING DRAGON</h3>
-            <p id="user-display" style="font-size: 12px; color: var(--text-dim); margin-bottom: 30px;"></p>
+            <p id="user-display" style="font-size: 12px; color: var(--gold); margin-bottom: 30px;"></p>
+            
             <div class="nav-item active" onclick="switchPage('dashboard', this)">Dashboard</div>
             <div class="nav-item" onclick="switchPage('exams', this)">Take Exam</div>
-            <div class="nav-item" onclick="switchPage('results', this)">Results</div>
+            <div class="nav-item" onclick="switchPage('results', this)">My Results</div>
+            
+            <div style="margin-top: 50px;">
+                <button class="btn" style="background: transparent; border: 1px solid var(--border); font-size: 12px;" onclick="location.reload()">LOGOUT</button>
+            </div>
         </aside>
 
         <main class="main-content">
             <div id="page-dashboard" class="page active">
                 <h1 style="font-family: var(--font-head);">DASHBOARD</h1>
                 <div class="card">
-                    <h3>Welcome, Future Real Estate Pro!</h3>
-                    <p style="color: var(--text-dim);">Navigate to the "Take Exam" tab to start your mock boards.</p>
+                    <h2 id="welcome-header">Welcome, Dragon!</h2>
+                    <p style="color: var(--text-dim);">Your training portal is ready. Access your exams using the sidebar.</p>
                 </div>
             </div>
 
             <div id="page-exams" class="page">
-                <h1 style="font-family: var(--font-head);">AVAILABLE EXAMS</h1>
+                <h1 style="font-family: var(--font-head);">EXAM VAULT</h1>
                 <div id="exam-unlock-ui" class="card" style="max-width: 400px;">
-                    <p style="margin-bottom: 15px;">Enter your <strong>Dragon Key</strong> to launch the exam session.</p>
+                    <p style="margin-bottom: 15px;">Enter your <strong>Dragon Key</strong> to start the exam.</p>
                     <input type="text" id="dragon-key-input" class="input-dark" placeholder="e.g. DRACO-2026">
-                    <button class="btn" style="width: 100%; margin-top: 10px;" onclick="unlockExam()">START THE GAUNTLET</button>
+                    <button class="btn" onclick="unlockExam()">START THE GAUNTLET</button>
                 </div>
 
                 <div id="exam-engine" style="display:none;">
                     <div class="card">
-                        <h2 id="q-text" style="margin-bottom: 20px;">Loading Question...</h2>
+                        <h2 id="q-text" style="margin-bottom: 20px;">Loading...</h2>
                         <div id="choices" style="display: grid; gap: 10px;"></div>
                     </div>
+                </div>
+            </div>
+
+            <div id="page-results" class="page">
+                <h1 style="font-family: var(--font-head);">PAST RESULTS</h1>
+                <div class="card">
+                    <p style="color: var(--text-dim);">No results found yet. Complete an exam to see your stats here.</p>
                 </div>
             </div>
         </main>
@@ -95,20 +111,40 @@
         let currentQuestions = [];
         let currentIndex = 0;
 
-        // GATE 1 LOGIN
+        // GATE 1: LOGIN (Email + Password)
         async function portalLogin() {
             const email = document.getElementById('student-email').value;
-            if(!email) return alert("Email required");
-            
-            // For now, we allow any email to access the dashboard for testing.
-            // In the future, we will verify this against your 'users' table.
-            currentUser = email;
+            const password = document.getElementById('student-password').value;
+            const btn = document.getElementById('login-btn');
+
+            if(!email || !password) return alert("Email and Password required");
+
+            btn.innerText = "AUTHENTICATING...";
+            btn.disabled = true;
+
+            const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('email', email.trim())
+                .eq('password', password.trim())
+                .single();
+
+            if (error || !data) {
+                alert("Invalid email or password.");
+                btn.innerText = "ACCESS PORTAL";
+                btn.disabled = false;
+                return;
+            }
+
+            // Success
+            currentUser = data;
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
-            document.getElementById('user-display').innerText = email;
+            document.getElementById('user-display').innerText = data.full_name || data.email;
+            document.getElementById('welcome-header').innerText = "Welcome back, " + (data.full_name || "Dragon") + "!";
         }
 
-        // GATE 2: DRAGON KEY UNLOCK
+        // GATE 2: EXAM KEY
         async function unlockExam() {
             const key = document.getElementById('dragon-key-input').value;
             if(!key) return alert("Please enter a Dragon Key");
@@ -116,24 +152,22 @@
             const { data, error } = await supabase
                 .from('exam_keys')
                 .select('*, exam_configs(*)')
-                .eq('key_code', key)
+                .eq('key_code', key.trim())
                 .single();
 
-            if(error || !data) return alert("Invalid Dragon Key. Please check your spelling.");
+            if(error || !data) return alert("Invalid Dragon Key.");
 
-            // Success! Load the questions for this config
-            const { data: qs } = await supabase
-                .from('questions')
-                .select('*')
-                .limit(data.exam_configs.total_questions);
-
+            // Load Questions
+            const { data: qs } = await supabase.from('questions').select('*').limit(20);
             currentQuestions = qs;
+            
             document.getElementById('exam-unlock-ui').style.display = 'none';
             document.getElementById('exam-engine').style.display = 'block';
             renderQuestion();
         }
 
         function renderQuestion() {
+            if(!currentQuestions.length) return alert("No questions found in database.");
             const q = currentQuestions[currentIndex];
             document.getElementById('q-text').innerText = q.question_text;
             const container = document.getElementById('choices');
@@ -141,12 +175,13 @@
             
             ['a','b','c','d'].forEach(letter => {
                 const b = document.createElement('button');
-                b.className = "btn";
-                b.style.background = "var(--dark3)";
-                b.style.border = "1px solid var(--border)";
+                b.className = "input-dark";
                 b.style.textAlign = "left";
-                b.innerHTML = `<span style="color:var(--gold)">${letter.toUpperCase()}.</span> ${q['choice_'+letter]}`;
-                b.onclick = () => alert("You selected " + letter);
+                b.style.cursor = "pointer";
+                b.innerHTML = `<span style="color:var(--gold); font-weight:bold; margin-right:10px;">${letter.toUpperCase()}</span> ${q['choice_'+letter]}`;
+                b.onclick = () => {
+                    alert("Answer Recorded! This is where we will save to the 'results' table next.");
+                };
                 container.appendChild(b);
             });
         }
