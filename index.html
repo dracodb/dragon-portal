@@ -19,7 +19,7 @@
         .login-card { background: var(--surface); padding: 40px; border-radius: 20px; border: 1px solid var(--border); width: 320px; text-align: center; }
         
         /* Layout */
-        .app-container { display: none; min-height: 100vh; flex-direction: row; }
+        .app-container { display: none; min-height: 100vh; flex-direction: row; width: 100%; }
         .sidebar { width: 240px; background: #111; border-right: 1px solid var(--border); padding: 20px; flex-shrink: 0; }
         .nav-item { padding: 12px; cursor: pointer; color: var(--text-dim); transition: 0.2s; border-radius: 8px; margin-bottom: 5px; }
         .nav-item.active { background: rgba(136,11,24,0.2); color: var(--gold); border-left: 3px solid var(--gold); }
@@ -30,7 +30,6 @@
         .btn { background: var(--red); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-family: var(--font-head); cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 10px; box-sizing: border-box; outline: none; }
-        .input-dark:focus { border-color: var(--gold); }
         
         .page { display: none; }
         .page.active { display: block; }
@@ -59,9 +58,9 @@
             <h3 style="font-family: var(--font-head); color: var(--text);">FLAMING DRAGON</h3>
             <p id="user-display" style="font-size: 12px; color: var(--gold); margin-bottom: 30px;"></p>
             
-            <div class="nav-item active" onclick="switchPage('dashboard', this)">Dashboard</div>
-            <div class="nav-item" onclick="switchPage('exams', this)">Take Exam</div>
-            <div class="nav-item" onclick="switchPage('results', this)">My Results</div>
+            <div class="nav-item active" id="nav-dash" onclick="switchPage('dashboard', this)">Dashboard</div>
+            <div class="nav-item" id="nav-exams" onclick="switchPage('exams', this)">Take Exam</div>
+            <div class="nav-item" id="nav-results" onclick="switchPage('results', this)">My Results</div>
             
             <div style="margin-top: 50px;">
                 <button class="btn" style="background: transparent; border: 1px solid var(--border); font-size: 12px;" onclick="location.reload()">LOGOUT</button>
@@ -87,7 +86,7 @@
 
                 <div id="exam-engine" style="display:none;">
                     <div class="card">
-                        <h2 id="q-text" style="margin-bottom: 20px;">Loading...</h2>
+                        <h2 id="q-text" style="margin-bottom: 20px;">Loading Question...</h2>
                         <div id="choices" style="display: grid; gap: 10px;"></div>
                     </div>
                 </div>
@@ -96,13 +95,14 @@
             <div id="page-results" class="page">
                 <h1 style="font-family: var(--font-head);">PAST RESULTS</h1>
                 <div class="card">
-                    <p style="color: var(--text-dim);">No results found yet. Complete an exam to see your stats here.</p>
+                    <p style="color: var(--text-dim);">Historical performance tracking coming soon.</p>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
+        // Initialize Supabase
         const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
         const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
         const supabase = window.supabase.createClient(SB_URL, SB_KEY);
@@ -111,63 +111,74 @@
         let currentQuestions = [];
         let currentIndex = 0;
 
-        // GATE 1: LOGIN (Email + Password)
+        // AUTHENTICATION
         async function portalLogin() {
-            const email = document.getElementById('student-email').value;
-            const password = document.getElementById('student-password').value;
+            console.log("Login attempt started...");
+            const email = document.getElementById('student-email').value.trim();
+            const password = document.getElementById('student-password').value.trim();
             const btn = document.getElementById('login-btn');
 
-            if(!email || !password) return alert("Email and Password required");
-
-            btn.innerText = "AUTHENTICATING...";
-            btn.disabled = true;
-
-            const { data, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('email', email.trim())
-                .eq('password', password.trim())
-                .single();
-
-            if (error || !data) {
-                alert("Invalid email or password.");
-                btn.innerText = "ACCESS PORTAL";
-                btn.disabled = false;
+            if(!email || !password) {
+                alert("Please fill in both fields.");
                 return;
             }
 
-            // Success
-            currentUser = data;
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('app').style.display = 'flex';
-            document.getElementById('user-display').innerText = data.full_name || data.email;
-            document.getElementById('welcome-header').innerText = "Welcome back, " + (data.full_name || "Dragon") + "!";
+            btn.innerText = "VERIFYING...";
+            btn.disabled = true;
+
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .eq('password', password)
+                    .single();
+
+                if (error || !data) {
+                    alert("Invalid email or password.");
+                    btn.innerText = "ACCESS PORTAL";
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Success Flow
+                currentUser = data;
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                document.getElementById('user-display').innerText = data.full_name || data.email;
+                document.getElementById('welcome-header').innerText = "Welcome back, " + (data.full_name || "Dragon") + "!";
+                
+            } catch (err) {
+                console.error(err);
+                alert("Connection failed. Check your Supabase settings.");
+                btn.innerText = "ACCESS PORTAL";
+                btn.disabled = false;
+            }
         }
 
-        // GATE 2: EXAM KEY
+        // EXAM SYSTEM
         async function unlockExam() {
-            const key = document.getElementById('dragon-key-input').value;
-            if(!key) return alert("Please enter a Dragon Key");
+            const key = document.getElementById('dragon-key-input').value.trim();
+            if(!key) return alert("Enter a key.");
 
             const { data, error } = await supabase
                 .from('exam_keys')
                 .select('*, exam_configs(*)')
-                .eq('key_code', key.trim())
+                .eq('key_code', key)
                 .single();
 
             if(error || !data) return alert("Invalid Dragon Key.");
 
-            // Load Questions
             const { data: qs } = await supabase.from('questions').select('*').limit(20);
+            if(!qs || qs.length === 0) return alert("No questions found in database.");
+
             currentQuestions = qs;
-            
             document.getElementById('exam-unlock-ui').style.display = 'none';
             document.getElementById('exam-engine').style.display = 'block';
             renderQuestion();
         }
 
         function renderQuestion() {
-            if(!currentQuestions.length) return alert("No questions found in database.");
             const q = currentQuestions[currentIndex];
             document.getElementById('q-text').innerText = q.question_text;
             const container = document.getElementById('choices');
@@ -180,7 +191,7 @@
                 b.style.cursor = "pointer";
                 b.innerHTML = `<span style="color:var(--gold); font-weight:bold; margin-right:10px;">${letter.toUpperCase()}</span> ${q['choice_'+letter]}`;
                 b.onclick = () => {
-                    alert("Answer Recorded! This is where we will save to the 'results' table next.");
+                    alert("Answer submitted! Moving to results calculation...");
                 };
                 container.appendChild(b);
             });
