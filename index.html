@@ -14,6 +14,9 @@
         }
         body { background: var(--dark); color: var(--text); font-family: var(--font-body); margin: 0; overflow-x: hidden; }
         
+        /* Version Tag */
+        .version-tag { position: fixed; bottom: 10px; right: 10px; font-size: 10px; color: var(--text-dim); opacity: 0.5; z-index: 3000; font-family: monospace; }
+
         /* Login Overlay */
         .login-overlay { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .login-card { background: var(--surface); padding: 40px; border-radius: 20px; border: 1px solid var(--border); width: 320px; text-align: center; }
@@ -39,6 +42,8 @@
     </style>
 </head>
 <body>
+
+    <div class="version-tag">PORTAL_VER_1.0.2</div>
 
     <div id="login-overlay" class="login-overlay">
         <div class="login-card">
@@ -72,58 +77,58 @@
                 <h1 style="font-family: var(--font-head);">DASHBOARD</h1>
                 <div class="card">
                     <h2 id="welcome-header">Welcome, Dragon!</h2>
-                    <p style="color: var(--text-dim);">Your training portal is ready. Access your exams using the sidebar.</p>
+                    <p style="color: var(--text-dim);">Portal Version 1.0.2 Active.</p>
                 </div>
             </div>
 
             <div id="page-exams" class="page">
                 <h1 style="font-family: var(--font-head);">EXAM VAULT</h1>
                 <div id="exam-unlock-ui" class="card" style="max-width: 400px;">
-                    <p style="margin-bottom: 15px;">Enter your <strong>Dragon Key</strong> to start the exam.</p>
+                    <p style="margin-bottom: 15px;">Enter your <strong>Dragon Key</strong> to start.</p>
                     <input type="text" id="dragon-key-input" class="input-dark" placeholder="e.g. DRACO-2026">
-                    <button class="btn" onclick="unlockExam()">START THE GAUNTLET</button>
+                    <button class="btn" onclick="unlockExam()">START GAUNTLET</button>
                 </div>
-
                 <div id="exam-engine" style="display:none;">
                     <div class="card">
-                        <h2 id="q-text" style="margin-bottom: 20px;">Loading Question...</h2>
-                        <div id="choices" style="display: grid; gap: 10px;"></div>
+                        <h2 id="q-text">Loading...</h2>
+                        <div id="choices" style="display: grid; gap: 10px; margin-top:20px;"></div>
                     </div>
                 </div>
             </div>
 
             <div id="page-results" class="page">
-                <h1 style="font-family: var(--font-head);">PAST RESULTS</h1>
-                <div class="card">
-                    <p style="color: var(--text-dim);">Historical performance tracking coming soon.</p>
-                </div>
+                <h1 style="font-family: var(--font-head);">RESULTS</h1>
+                <div class="card"><p>Performance data loading...</p></div>
             </div>
         </main>
     </div>
 
     <script>
-        // Initialize Supabase
         const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
         const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
-        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+        
+        let supabase;
+
+        // PRE-FLIGHT: Ensure Supabase is ready
+        window.onload = () => {
+            if (typeof window.supabase === 'undefined') {
+                alert("Supabase not loaded. Please refresh or check connection.");
+            } else {
+                supabase = window.supabase.createClient(SB_URL, SB_KEY);
+                console.log("Dragon System Online.");
+            }
+        };
 
         let currentUser = null;
-        let currentQuestions = [];
-        let currentIndex = 0;
 
-        // AUTHENTICATION
         async function portalLogin() {
-            console.log("Login attempt started...");
             const email = document.getElementById('student-email').value.trim();
             const password = document.getElementById('student-password').value.trim();
             const btn = document.getElementById('login-btn');
 
-            if(!email || !password) {
-                alert("Please fill in both fields.");
-                return;
-            }
+            if(!email || !password) return alert("Fields cannot be empty.");
 
-            btn.innerText = "VERIFYING...";
+            btn.innerText = "AUTHENTICATING...";
             btn.disabled = true;
 
             try {
@@ -141,60 +146,22 @@
                     return;
                 }
 
-                // Success Flow
                 currentUser = data;
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
-                document.getElementById('user-display').innerText = data.full_name || data.email;
-                document.getElementById('welcome-header').innerText = "Welcome back, " + (data.full_name || "Dragon") + "!";
-                
+                document.getElementById('user-display').innerText = data.email;
             } catch (err) {
+                alert("Critical System Error. Check console.");
                 console.error(err);
-                alert("Connection failed. Check your Supabase settings.");
-                btn.innerText = "ACCESS PORTAL";
                 btn.disabled = false;
             }
         }
 
-        // EXAM SYSTEM
         async function unlockExam() {
             const key = document.getElementById('dragon-key-input').value.trim();
-            if(!key) return alert("Enter a key.");
-
-            const { data, error } = await supabase
-                .from('exam_keys')
-                .select('*, exam_configs(*)')
-                .eq('key_code', key)
-                .single();
-
-            if(error || !data) return alert("Invalid Dragon Key.");
-
-            const { data: qs } = await supabase.from('questions').select('*').limit(20);
-            if(!qs || qs.length === 0) return alert("No questions found in database.");
-
-            currentQuestions = qs;
-            document.getElementById('exam-unlock-ui').style.display = 'none';
-            document.getElementById('exam-engine').style.display = 'block';
-            renderQuestion();
-        }
-
-        function renderQuestion() {
-            const q = currentQuestions[currentIndex];
-            document.getElementById('q-text').innerText = q.question_text;
-            const container = document.getElementById('choices');
-            container.innerHTML = '';
-            
-            ['a','b','c','d'].forEach(letter => {
-                const b = document.createElement('button');
-                b.className = "input-dark";
-                b.style.textAlign = "left";
-                b.style.cursor = "pointer";
-                b.innerHTML = `<span style="color:var(--gold); font-weight:bold; margin-right:10px;">${letter.toUpperCase()}</span> ${q['choice_'+letter]}`;
-                b.onclick = () => {
-                    alert("Answer submitted! Moving to results calculation...");
-                };
-                container.appendChild(b);
-            });
+            const { data, error } = await supabase.from('exam_keys').select('*').eq('key_code', key).single();
+            if(error || !data) return alert("Key invalid.");
+            alert("Exam Unlocked! Questions loading...");
         }
 
         function switchPage(pageId, el) {
