@@ -270,39 +270,47 @@
         }
 
         async function submitQuiz() {
-            const btn = document.getElementById('submit-btn');
-            if(btn) { btn.innerText = "RECORDING..."; btn.disabled = true; }
-            clearInterval(timerInterval);
-            const title = document.getElementById('active-exam-title').innerText;
+    const btn = document.getElementById('submit-btn');
+    if(btn) { btn.innerText = "RECORDING..."; btn.disabled = true; }
+    clearInterval(timerInterval);
+    
+    // Grab the title from the UI
+    const titleElement = document.getElementById('active-exam-title');
+    const title = titleElement ? titleElement.innerText : "Untitled Exam";
 
-            let correct = 0;
-            activeQuestions.forEach(q => {
-                const sel = document.querySelector(`input[name="${q.id}"]:checked`);
-                if (sel && sel.value === q.correct_choice) correct++;
-            });
+    let correct = 0;
+    activeQuestions.forEach(q => {
+        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+        if (sel && sel.value === q.correct_choice) correct++;
+    });
 
-            const percent = ((correct / activeQuestions.length) * 100).toFixed(0);
+    const percent = ((correct / activeQuestions.length) * 100).toFixed(0);
 
-            try {
-                const { error } = await getClient().from('results').insert([{
-                    student_id: currentUser.email,
-                    exam_title: title,
-                    score: parseInt(correct),
-                    total: parseInt(activeQuestions.length),
-                    percentage: parseInt(percent)
-                }]);
-                
-                if(error) throw error;
+    try {
+        // Send data to Supabase
+        const { error } = await getClient().from('results').insert([{
+            student_email: currentUser.email, // MATCHES SQL student_email
+            exam_title: title,
+            score: parseInt(correct),
+            total: parseInt(activeQuestions.length),
+            percentage: parseInt(percent)
+        }]);
+        
+        if(error) throw error;
 
-                alert(`SUBMITTED! Score: ${correct}/${activeQuestions.length} (${percent}%)`);
-                document.getElementById('quiz-area').innerHTML = "";
-                document.getElementById('unlock-zone').style.display = 'block';
-                document.getElementById('page-sub').innerText = "Welcome back";
-                document.getElementById('page-sub').style.color = "var(--text-muted)";
-                switchTab('dashboard', document.querySelector('.nav-item'));
-            } catch (err) { 
-                console.error("Result save error:", err);
-                alert("Save Error: " + err.message); 
-            }
-        }
+        alert(`SUBMITTED! Score: ${correct}/${activeQuestions.length} (${percent}%)`);
+        
+        // UI Cleanup
+        document.getElementById('quiz-area').innerHTML = "";
+        document.getElementById('unlock-zone').style.display = 'block';
+        document.getElementById('page-sub').innerText = "Welcome back";
+        document.getElementById('page-sub').style.color = "var(--text-muted)";
+        switchTab('dashboard', document.querySelector('.nav-item'));
+        
+    } catch (err) { 
+        console.error("Result save error:", err);
+        alert("Save Error: " + err.message); 
+        if(btn) { btn.innerText = "FINISH & SUBMIT"; btn.disabled = false; }
+    }
+}
     </script>
