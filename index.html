@@ -8,72 +8,119 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --red: #880b18; --gold: #ffcf00; --dark: #0f0f0f; --surface: #1e1e1e;
-            --border: rgba(255,255,255,0.08); --text: #f0ede8; --font-head: 'Oswald', sans-serif;
+            --red: #880b18; --gold: #ffcf00; --dark: #0f0f0f; --dark2: #181818;
+            --surface: #1e1e1e; --border: rgba(255,255,255,0.08); --text: #f0ede8;
+            --font-head: 'Oswald', sans-serif; --font-body: 'Montserrat', sans-serif;
+            --sidebar-w: 240px;
         }
-        body { background: var(--dark); color: var(--text); font-family: 'Montserrat', sans-serif; margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--dark); color: var(--text); font-family: var(--font-body); margin: 0; height: 100vh; overflow: hidden; }
+
+        /* ── VERSION TAG ── */
         .v-tag { position: fixed; bottom: 10px; right: 10px; font-family: monospace; font-size: 10px; color: var(--gold); z-index: 9999; background: #000; padding: 4px; border: 1px solid var(--border); }
-        .login-card { background: var(--surface); padding: 40px; border-radius: 24px; border: 1px solid var(--border); width: 340px; text-align: center; position: relative; }
+
+        /* ── LOGIN OVERLAY ── */
+        #login-ui { position: fixed; inset: 0; background: var(--dark); z-index: 8000; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: var(--surface); padding: 40px; border-radius: 24px; border: 1px solid var(--border); width: 340px; text-align: center; }
         .input-group { position: relative; margin-bottom: 15px; }
         .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 14px; border-radius: 10px; width: 100%; box-sizing: border-box; outline: none; }
-        .toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: 10px; cursor: pointer; font-weight: bold; padding: 5px; background: #111; border-radius: 4px; }
-        .btn { background: var(--red); color: white; padding: 14px; border-radius: 10px; border: none; font-family: var(--font-head); font-weight: 600; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; }
-        #app-portal { display: none; position: fixed; inset: 0; background: var(--dark); z-index: 8000; padding: 40px; text-align: center; }
+        .toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: 10px; cursor: pointer; font-weight: bold; }
+        .btn-login { background: var(--red); color: white; padding: 14px; border-radius: 10px; border: none; font-family: var(--font-head); font-weight: 600; cursor: pointer; width: 100%; text-transform: uppercase; }
+
+        /* ── MAIN PORTAL LAYOUT ── */
+        #app-portal { display: none; height: 100vh; width: 100%; }
+        .sidebar { width: var(--sidebar-w); background: var(--dark2); border-right: 1px solid var(--border); padding: 24px 20px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .main-content { flex: 1; overflow-y: auto; background: var(--dark); }
+        
+        .nav-item { padding: 12px 15px; color: #9a9590; cursor: pointer; border-radius: 8px; margin-bottom: 5px; font-weight: 500; font-size: 13px; text-align: left; background: none; border: none; width: 100%; }
+        .nav-item.active { background: rgba(136,11,24,0.25); color: var(--gold); border-left: 3px solid var(--gold); }
+        
+        .page { display: none; padding: 40px; }
+        .page.active { display: block; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.2.3</div>
+    <div class="v-tag">DRAGON_VER_1.2.4</div>
 
-    <div id="login-ui" class="login-card">
-        <h2 style="font-family: var(--font-head); margin-bottom: 20px;">FLAMING DRAGON</h2>
-        <div class="input-group">
-            <input type="email" id="email" class="input-dark" placeholder="Email Address">
+    <div id="login-ui">
+        <div class="login-card">
+            <h2 style="font-family: var(--font-head); margin-bottom: 20px;">FLAMING DRAGON</h2>
+            <div class="input-group">
+                <input type="email" id="email" class="input-dark" placeholder="Email Address">
+            </div>
+            <div class="input-group">
+                <input type="password" id="pass" class="input-dark" placeholder="Password">
+                <div class="toggle-btn" onclick="localToggle()">SHOW</div>
+            </div>
+            <button class="btn-login" id="login-btn" onclick="localLogin()">Access Portal</button>
         </div>
-        <div class="input-group">
-            <input type="password" id="pass" class="input-dark" placeholder="Password">
-            <div class="toggle-btn" onclick="localToggle()">SHOW</div>
-        </div>
-        <button class="btn" id="login-btn" onclick="localLogin()">Access Portal</button>
     </div>
 
     <div id="app-portal">
-        <h1 style="font-family: var(--font-head);">VAULT OPEN</h1>
-        <p id="user-name" style="color:var(--gold)"></p>
-        <button onclick="location.reload()" class="btn" style="width:200px; background:none; border:1px solid var(--border); margin-top:20px;">LOGOUT</button>
+        <aside class="sidebar">
+            <div style="margin-bottom: 30px;">
+                <h3 style="font-family: var(--font-head); color: var(--gold);">STUDENT PORTAL</h3>
+                <p id="user-display" style="font-size: 11px; margin-top: 5px;"></p>
+            </div>
+            <button class="nav-item active" onclick="switchTab('dashboard', this)">Dashboard</button>
+            <button class="nav-item" onclick="switchTab('exams', this)">Exams</button>
+            <button class="nav-item" onclick="switchTab('results', this)">My Results</button>
+            <button class="nav-item" style="margin-top: auto; color: var(--red);" onclick="location.reload()">Logout</button>
+        </aside>
+
+        <main class="main-content">
+            <div id="page-dashboard" class="page active">
+                <h1 style="font-family: var(--font-head); margin-bottom: 20px;">DASHBOARD</h1>
+                <div class="card">
+                    <h3>Welcome back, Dragon Candidate!</h3>
+                    <p style="color: #9a9590; margin-top: 10px;">Your student portal is live. Use the sidebar to access your mock exams.</p>
+                </div>
+            </div>
+
+            <div id="page-exams" class="page">
+                <h1 style="font-family: var(--font-head); margin-bottom: 20px;">EXAMS</h1>
+                <div class="card">
+                    <p>Select an available Mock Exam to begin.</p>
+                </div>
+            </div>
+
+            <div id="page-results" class="page">
+                <h1 style="font-family: var(--font-head); margin-bottom: 20px;">MY RESULTS</h1>
+                <div class="card">
+                    <p>No historical data found yet.</p>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
-        // 1. Password Toggle (Pure JS, No Supabase dependency)
         function localToggle() {
             const p = document.getElementById('pass');
             const btn = event.target;
-            if (p.type === "password") {
-                p.type = "text";
-                btn.innerText = "HIDE";
-            } else {
-                p.type = "password";
-                btn.innerText = "SHOW";
-            }
+            p.type = (p.type === "password") ? "text" : "password";
+            btn.innerText = (p.type === "password") ? "SHOW" : "HIDE";
         }
 
-        // 2. Login (Supabase is called ONLY inside here)
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + tabId).classList.add('active');
+            el.classList.add('active');
+        }
+
         async function localLogin() {
-            console.log("Login attempt started...");
             const btn = document.getElementById('login-btn');
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('pass').value.trim();
 
-            if (!email || !pass) {
-                alert("Please fill all fields.");
-                return;
-            }
-
+            if (!email || !pass) return alert("Fill all fields.");
             btn.innerText = "CONNECTING...";
             btn.disabled = true;
 
             try {
-                // Initialize Supabase only when needed
                 const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
                 const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
                 const supabase = window.supabase.createClient(SB_URL, SB_KEY);
@@ -85,19 +132,17 @@
                     .eq('password', pass)
                     .limit(1);
 
-                if (error || !data || data.length === 0) {
-                    alert("Login failed. Check your credentials.");
+                if (data && data.length > 0) {
+                    document.getElementById('login-ui').style.display = 'none';
+                    document.getElementById('app-portal').style.display = 'flex';
+                    document.getElementById('user-display').innerText = data[0].email;
+                } else {
+                    alert("Login failed.");
                     btn.innerText = "Access Portal";
                     btn.disabled = false;
-                } else {
-                    document.getElementById('login-ui').style.display = 'none';
-                    document.getElementById('app-portal').style.display = 'block';
-                    document.getElementById('user-name').innerText = "Student: " + data[0].email;
                 }
             } catch (err) {
-                console.error(err);
-                alert("Critical System Error. Check browser console.");
-                btn.innerText = "Access Portal";
+                alert("Database Error.");
                 btn.disabled = false;
             }
         }
