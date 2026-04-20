@@ -64,7 +64,7 @@
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.3.10</div>
+    <div class="v-tag">DRAGON_VER_1.3.11</div>
     <div id="custom-alert">ALERT</div>
 
     <div id="login-ui">
@@ -132,194 +132,192 @@
     </div>
 
   <script>
-        const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
-        const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
-        let client = null;
-        let activeQuestions = [];
-        let timerInterval;
-        let currentUser = null;
-        let activeExamKey = "";
+    const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
+    const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
+    let client = null;
+    let activeQuestions = [];
+    let timerInterval;
+    let currentUser = null;
+    let activeExamKey = "";
+    let activeConfigId = ""; // Captured to fix null config_id
 
-        function getClient() {
-            if (!client) client = window.supabase.createClient(SB_URL, SB_KEY);
-            return client;
-        }
-
-        function showAlert(msg) {
-            const a = document.getElementById('custom-alert');
-            a.innerText = msg; a.classList.add('show');
-            setTimeout(() => a.classList.remove('show'), 3000);
-        }
-
-        function localToggle(e) {
-            if(e) e.preventDefault();
-            const p = document.getElementById('pass');
-            const btn = e.target;
-            p.type = p.type === 'password' ? 'text' : 'password';
-            btn.innerText = p.type === 'password' ? 'SHOW' : 'HIDE';
-        }
-
-        async function localLogin() {
-            const btn = document.getElementById('login-btn');
-            const e = document.getElementById('email').value.trim();
-            const p = document.getElementById('pass').value.trim();
-            if(!e || !p) return showAlert("FILL ALL FIELDS");
-            btn.innerText = "VERIFYING..."; btn.disabled = true;
-            try {
-                const { data, error } = await getClient().from('users').select('*').eq('email', e).eq('password', p).limit(1);
-                if (data && data.length > 0) {
-                    currentUser = data[0];
-                    document.getElementById('login-ui').style.display = 'none';
-                    document.getElementById('app-portal').style.display = 'flex';
-                    document.getElementById('stu-name').innerText = currentUser.full_name;
-                    document.getElementById('stu-email').innerText = currentUser.email;
-                    document.getElementById('stu-initials').innerText = currentUser.full_name.charAt(0).toUpperCase();
-                } else {
-                    showAlert("ACCESS DENIED");
-                    btn.innerText = "ACCESS PORTAL"; btn.disabled = false;
-                }
-            } catch (err) { showAlert("DB ERROR"); btn.disabled = false; btn.innerText = "ACCESS PORTAL"; }
-        }
-
-        function switchTab(id, el) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
-            if(el) el.classList.add('active');
-            document.getElementById('page-title').innerText = id.toUpperCase();
-        }
-
-        function shuffleChoices(q) {
-            let choices = [
-                { label: 'A', text: q.choice_a }, { label: 'B', text: q.choice_b },
-                { label: 'C', text: q.choice_c }, { label: 'D', text: q.choice_d }
-            ];
-            return choices.sort(() => Math.random() - 0.5);
-        }
-
-        // AUTO-SAVE FIXED: Now captures live time and uses correct Upsert syntax
-        async function autoSave(qid, choice) {
-            if(!currentUser) return;
-            
-            // Capture live time from the topbar
-            const timeText = document.getElementById('page-sub').innerText;
-            const timeMatch = timeText.match(/\d+/g);
-            let timeLeft = 0;
-            if(timeMatch && timeMatch.length >= 2) {
-                timeLeft = (parseInt(timeMatch[0]) * 60) + parseInt(timeMatch[1]);
-            }
-
-            try {
-                await getClient().from('exam_attempts').upsert({
-                    student_email: currentUser.email,
-                    exam_key: activeExamKey,
-                    question_id: qid,
-                    selected_choice: choice,
-                    remaining_time: timeLeft
-                }, { onConflict: 'student_email,exam_key,question_id' });
-            } catch (e) { console.error("Auto-save fail", e); }
-        }
-
-        async function handleExamUnlock() {
-            const key = document.getElementById('exam-key-input').value.trim();
-            if(!key) return showAlert("ENTER KEY");
-            try {
-                const db = getClient();
-                const { data: exam, error: examError } = await db.from('exams').select('*').eq('exam_key', key).single();
-                if (examError) return showAlert("KEY NOT FOUND");
-                const { data: config } = await db.from('exam_config').select('*').eq('config_id', exam.config_id).single();
-                const { data: qs } = await db.from('questions').select('*').in('id', exam.question_ids);
-                activeQuestions = qs;
-                activeExamKey = key;
-                startExamSession(exam.title, config.timer_minutes);
-            } catch (err) { alert("LOAD ERROR: " + err.message); }
-        }
-
-        function startExamSession(title, mins) {
-            document.getElementById('unlock-zone').style.display = 'none';
-            let time = (mins || 60) * 60;
-            const sub = document.getElementById('page-sub');
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                let m = Math.floor(time / 60);
-                let s = time % 60;
-                sub.innerText = `TIME REMAINING: ${m}:${s < 10 ? '0' : ''}${s}`;
-                sub.style.color = time < 60 ? 'var(--red)' : 'var(--gold)';
-                if(time <= 0) { submitQuiz(); }
-                time--;
-            }, 1000);
-
-            const area = document.getElementById('quiz-area');
-            let html = `<h2 id="active-exam-title" style="margin-bottom:20px; color:var(--gold); font-family:var(--font-head);">${title}</h2>`;
-            
-            activeQuestions.forEach((q, i) => {
-                const shuffled = shuffleChoices(q);
-                html += `
-                <div class="card">
-                    <p><b>${i+1}. ${q.question_text}</b></p>
-                    ${shuffled.map(c => `
-                        <label class="option-label">
-                            <input type="radio" name="${q.id}" value="${c.label}" onclick="autoSave('${q.id}', '${c.label}')"> 
-                            ${c.label}. ${c.text}
-                        </label>
-                    `).join('')}
-                </div>`;
-            });
-
-            area.innerHTML = html + `<button id="submit-btn" class="btn-login" style="margin-top:20px;" onclick="submitQuiz()">FINISH & SUBMIT</button>`;
-        }
-
-       async function submitQuiz() {
-    const btn = document.getElementById('submit-btn');
-    if(btn) { btn.innerText = "RECORDING..."; btn.disabled = true; }
-    clearInterval(timerInterval);
-    
-    const title = document.getElementById('active-exam-title')?.innerText || "Untitled Exam";
-    
-    let correct = 0;
-    let studentAnswers = {}; // To store the choice map (e.g., {"q1": "A", "q2": "C"})
-
-    activeQuestions.forEach(q => {
-        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
-        const val = sel ? sel.value : null;
-        
-        // 1. Map the answer for the 'answers' column
-        studentAnswers[q.id] = val;
-        
-        // 2. Score it
-        if (val === q.correct_choice) correct++;
-    });
-
-    const percent = ((correct / activeQuestions.length) * 100).toFixed(0);
-
-    try {
-        const { error } = await getClient().from('results').insert([{
-            student_email: currentUser.email,
-            student_name: currentUser.full_name, // Fixes student_name null
-            exam_key: activeExamKey,
-            exam_title: title,
-            score: parseInt(correct),
-            total: parseInt(activeQuestions.length),
-            percentage: parseInt(percent),
-            answers: studentAnswers // Fixes answers null
-            // Note: If you need config_id here, we'd need to store it 
-            // globally when the exam unlocks, similar to activeExamKey
-        }]);
-        
-        if(error) throw error;
-
-        alert(`SUCCESS! Result saved for ${currentUser.full_name}`);
-        
-        document.getElementById('quiz-area').innerHTML = "";
-        document.getElementById('unlock-zone').style.display = 'block';
-        document.getElementById('page-sub').innerText = "Welcome back";
-        switchTab('dashboard', document.querySelector('.nav-item'));
-        
-    } catch (err) { 
-        console.error("Result save error:", err);
-        alert("Save Error: " + err.message); 
-        if(btn) { btn.innerText = "FINISH & SUBMIT"; btn.disabled = false; }
+    function getClient() {
+        if (!client) client = window.supabase.createClient(SB_URL, SB_KEY);
+        return client;
     }
-}
-      
+
+    function showAlert(msg) {
+        const a = document.getElementById('custom-alert');
+        a.innerText = msg; a.classList.add('show');
+        setTimeout(() => a.classList.remove('show'), 3000);
+    }
+
+    function localToggle(e) {
+        if(e) e.preventDefault();
+        const p = document.getElementById('pass');
+        const btn = e.target;
+        p.type = p.type === 'password' ? 'text' : 'password';
+        btn.innerText = p.type === 'password' ? 'SHOW' : 'HIDE';
+    }
+
+    async function localLogin() {
+        const btn = document.getElementById('login-btn');
+        const e = document.getElementById('email').value.trim();
+        const p = document.getElementById('pass').value.trim();
+        if(!e || !p) return showAlert("FILL ALL FIELDS");
+        btn.innerText = "VERIFYING..."; btn.disabled = true;
+        try {
+            const { data, error } = await getClient().from('users').select('*').eq('email', e).eq('password', p).limit(1);
+            if (data && data.length > 0) {
+                currentUser = data[0];
+                document.getElementById('login-ui').style.display = 'none';
+                document.getElementById('app-portal').style.display = 'flex';
+                document.getElementById('stu-name').innerText = currentUser.full_name;
+                document.getElementById('stu-email').innerText = currentUser.email;
+                document.getElementById('stu-initials').innerText = currentUser.full_name.charAt(0).toUpperCase();
+            } else {
+                showAlert("ACCESS DENIED");
+                btn.innerText = "ACCESS PORTAL"; btn.disabled = false;
+            }
+        } catch (err) { showAlert("DB ERROR"); btn.disabled = false; btn.innerText = "ACCESS PORTAL"; }
+    }
+
+    function switchTab(id, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('tab-' + id).classList.add('active');
+        if(el) el.classList.add('active');
+        document.getElementById('page-title').innerText = id.toUpperCase();
+    }
+
+    function shuffleChoices(q) {
+        let choices = [
+            { label: 'A', text: q.choice_a }, { label: 'B', text: q.choice_b },
+            { label: 'C', text: q.choice_c }, { label: 'D', text: q.choice_d }
+        ];
+        return choices.sort(() => Math.random() - 0.5);
+    }
+
+    async function autoSave(qid, choice) {
+        if(!currentUser) return;
+        
+        const timeText = document.getElementById('page-sub').innerText;
+        const timeMatch = timeText.match(/\d+/g);
+        let timeLeft = 0;
+        if(timeMatch && timeMatch.length >= 2) {
+            timeLeft = (parseInt(timeMatch[0]) * 60) + parseInt(timeMatch[1]);
+        }
+
+        try {
+            await getClient().from('exam_attempts').upsert({
+                student_email: currentUser.email,
+                exam_key: activeExamKey,
+                question_id: qid,
+                selected_choice: choice,
+                remaining_time: timeLeft
+            }, { onConflict: 'student_email,exam_key,question_id' });
+        } catch (e) { console.error("Auto-save fail", e); }
+    }
+
+    async function handleExamUnlock() {
+        const key = document.getElementById('exam-key-input').value.trim();
+        if(!key) return showAlert("ENTER KEY");
+        try {
+            const db = getClient();
+            const { data: exam, error: examError } = await db.from('exams').select('*').eq('exam_key', key).single();
+            if (examError) return showAlert("KEY NOT FOUND");
+            
+            activeExamKey = key;
+            activeConfigId = exam.config_id; // Store for results table
+            
+            const { data: config } = await db.from('exam_config').select('*').eq('config_id', exam.config_id).single();
+            const { data: qs } = await db.from('questions').select('*').in('id', exam.question_ids);
+            
+            activeQuestions = qs;
+            startExamSession(exam.title, config.timer_minutes);
+        } catch (err) { alert("LOAD ERROR: " + err.message); }
+    }
+
+    function startExamSession(title, mins) {
+        document.getElementById('unlock-zone').style.display = 'none';
+        let time = (mins || 60) * 60;
+        const sub = document.getElementById('page-sub');
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            let m = Math.floor(time / 60);
+            let s = time % 60;
+            sub.innerText = `TIME REMAINING: ${m}:${s < 10 ? '0' : ''}${s}`;
+            sub.style.color = time < 60 ? 'var(--red)' : 'var(--gold)';
+            if(time <= 0) { submitQuiz(); }
+            time--;
+        }, 1000);
+
+        const area = document.getElementById('quiz-area');
+        let html = `<h2 id="active-exam-title" style="margin-bottom:20px; color:var(--gold); font-family:var(--font-head); text-transform: uppercase;">${title}</h2>`;
+        
+        activeQuestions.forEach((q, i) => {
+            const shuffled = shuffleChoices(q);
+            html += `
+            <div class="card">
+                <p style="margin-bottom: 15px;"><b>${i+1}. ${q.question_text}</b></p>
+                ${shuffled.map(c => `
+                    <label class="option-label">
+                        <input type="radio" name="${q.id}" value="${c.label}" onclick="autoSave('${q.id}', '${c.label}')"> 
+                        ${c.text}
+                    </label>
+                `).join('')}
+            </div>`;
+        });
+
+        area.innerHTML = html + `<button id="submit-btn" class="btn-login" style="margin-top:20px;" onclick="submitQuiz()">FINISH & SUBMIT</button>`;
+    }
+
+    async function submitQuiz() {
+        const btn = document.getElementById('submit-btn');
+        if(btn) { btn.innerText = "RECORDING..."; btn.disabled = true; }
+        clearInterval(timerInterval);
+        
+        const title = document.getElementById('active-exam-title')?.innerText || "Untitled Exam";
+        
+        let correct = 0;
+        let studentAnswers = {};
+
+        activeQuestions.forEach(q => {
+            const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+            const val = sel ? sel.value : null;
+            studentAnswers[q.id] = val;
+            if (val === q.correct_choice) correct++;
+        });
+
+        const percent = ((correct / activeQuestions.length) * 100).toFixed(0);
+
+        try {
+            const { error } = await getClient().from('results').insert([{
+                student_email: currentUser.email,
+                student_name: currentUser.full_name,
+                key_used: activeExamKey,   // Using key_used to match your schema
+                config_id: activeConfigId, // Captured from unlock process
+                exam_title: title,
+                score: parseInt(correct),
+                total: parseInt(activeQuestions.length),
+                percentage: parseInt(percent),
+                answers: studentAnswers 
+            }]);
+            
+            if(error) throw error;
+
+            alert(`SUCCESS! Result saved for ${currentUser.full_name}`);
+            
+            document.getElementById('quiz-area').innerHTML = "";
+            document.getElementById('unlock-zone').style.display = 'block';
+            document.getElementById('page-sub').innerText = "Welcome back";
+            document.getElementById('page-sub').style.color = "var(--text-muted)";
+            switchTab('dashboard', document.querySelector('.nav-item'));
+            
+        } catch (err) { 
+            console.error("Result save error:", err);
+            alert("Save Error: " + err.message); 
+            if(btn) { btn.innerText = "FINISH & SUBMIT"; btn.disabled = false; }
+        }
+    }
 </script>
