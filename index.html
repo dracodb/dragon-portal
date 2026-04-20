@@ -28,7 +28,8 @@
         .input-group { position: relative; margin-bottom: 15px; }
         .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 14px; border-radius: 10px; width: 100%; box-sizing: border-box; outline: none; }
         .toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: 10px; cursor: pointer; font-weight: bold; }
-        .btn-login { background: var(--red); color: white; padding: 14px; border-radius: 10px; border: none; font-family: var(--font-head); font-weight: 600; cursor: pointer; width: 100%; text-transform: uppercase; }
+        .btn-login { background: var(--red); color: white; padding: 14px; border-radius: 10px; border: none; font-family: var(--font-head); font-weight: 600; cursor: pointer; width: 100%; text-transform: uppercase; transition: 0.2s; }
+        .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* ── CUSTOM ALERT ── */
         #custom-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--red); color: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--gold); z-index: 9000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 600; font-family: var(--font-head); }
@@ -39,7 +40,6 @@
         .sidebar { width: var(--sidebar-w); background: var(--dark2); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
         .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
         
-        /* Insert your Sidebar Logo/Avatar/Nav CSS here - I've kept it from your design snippet */
         .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); }
         .logo-flame { width: 36px; height: 36px; background: var(--red); border-radius: 8px; position: relative; margin-right: 10px; display: inline-block; vertical-align: middle;}
         .logo-flame::before { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 22px solid var(--gold); filter: drop-shadow(0 0 4px rgba(255,207,0,0.6)); }
@@ -56,17 +56,20 @@
         .page { display: none; }
         .page.active { display: block; }
         
-        /* Your Stat Grid & Cards */
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px; position: relative; overflow: hidden; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); opacity: 0.5; }
-        .stat-card.highlight::before { opacity: 1; }
+        
+        /* Quiz Styling */
+        .option-label { display: block; background: var(--dark3); padding: 12px; border-radius: 8px; margin-top: 8px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+        .option-label:hover { background: var(--dark4); border-color: var(--gold-dim); }
+        .option-label input { margin-right: 10px; accent-color: var(--gold); }
     </style>
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.2.7_FINAL</div>
+    <div class="v-tag">DRAGON_VER_1.3.1_MOCK</div>
     <div id="custom-alert">INCORRECT CREDENTIALS</div>
 
     <div id="login-ui">
@@ -105,7 +108,7 @@
 
         <div class="main">
             <header class="topbar">
-                <div>
+                <div style="flex:1">
                     <div style="font-family:var(--font-head); font-size:18px; font-weight:600; letter-spacing:1px;" id="page-title">DASHBOARD</div>
                     <div style="font-size:12px; color:var(--text-muted);" id="page-sub">Welcome back</div>
                 </div>
@@ -114,23 +117,28 @@
             <div class="page-content">
                 <div id="tab-dashboard" class="page active">
                     <div class="stat-grid">
-                        <div class="stat-card highlight">
-                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Overall Avg</div>
-                            <div style="font-family:var(--font-head); font-size:28px; font-weight:700; color:var(--gold);">74%</div>
-                        </div>
                         <div class="stat-card">
-                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Exams Taken</div>
-                            <div style="font-family:var(--font-head); font-size:28px; font-weight:700;">3</div>
+                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Overall Avg</div>
+                            <div style="font-family:var(--font-head); font-size:28px; font-weight:700; color:var(--gold);">--%</div>
                         </div>
                     </div>
                     <div class="card">
-                        <h3>System Status: Online</h3>
-                        <p style="color:var(--text-dim); margin-top:10px;">Database connected. Design Version 1.2.7 is active.</p>
+                        <h3>Mock System Status: Active</h3>
+                        <p style="color:var(--text-dim); margin-top:8px;">Head to the Exams tab and enter your key to begin.</p>
                     </div>
                 </div>
 
                 <div id="tab-exams" class="page">
-                    <h2 style="font-family:var(--font-head);">EXAMS PORTAL</h2>
+                    <div id="unlock-zone">
+                        <div class="card">
+                            <h2 style="font-family:var(--font-head); margin-bottom:12px;">ENTER EXAM KEY</h2>
+                            <div style="display:flex; gap:10px;">
+                                <input type="text" id="exam-key-input" class="input-dark" style="width:250px" placeholder="e.g. Quiz_1_Test">
+                                <button class="btn-login" style="width:140px" onclick="handleExamUnlock()">Unlock</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="quiz-area"></div>
                 </div>
 
                 <div id="tab-results" class="page">
@@ -141,6 +149,13 @@
     </div>
 
     <script>
+        const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
+        const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
+        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+
+        let activeQuestions = [];
+        let timerInterval;
+
         function showAlert(msg) {
             const a = document.getElementById('custom-alert');
             a.innerText = msg; a.classList.add('show');
@@ -157,8 +172,15 @@
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
-            el.classList.add('active');
+            if(el) el.classList.add('active');
             document.getElementById('page-title').innerText = id.toUpperCase();
+            
+            // Clean up if leaving exams
+            if(id !== 'exams') {
+                clearInterval(timerInterval);
+                document.getElementById('page-sub').innerText = "Welcome back";
+                document.getElementById('page-sub').style.color = "var(--text-muted)";
+            }
         }
 
         async function localLogin() {
@@ -167,31 +189,89 @@
             const p = document.getElementById('pass').value.trim();
             if (!e || !p) return showAlert("FILL ALL FIELDS");
             
-            btn.innerText = "LOADING...";
-            btn.disabled = true;
+            btn.innerText = "VERIFYING..."; btn.disabled = true;
 
             try {
-                const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
-                const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
-                const supabase = window.supabase.createClient(SB_URL, SB_KEY);
-
                 const { data, error } = await supabase.from('users').select('*').eq('email', e).eq('password', p).limit(1);
-
                 if (data && data.length > 0) {
-                    const user = data[0];
                     document.getElementById('login-ui').style.display = 'none';
                     document.getElementById('app-portal').style.display = 'flex';
-                    document.getElementById('stu-email').innerText = user.email;
-                    document.getElementById('stu-name').innerText = user.full_name || "CANDIDATE";
-                    document.getElementById('stu-initials').innerText = (user.full_name || "C").charAt(0).toUpperCase();
+                    document.getElementById('stu-name').innerText = data[0].full_name;
+                    document.getElementById('stu-email').innerText = data[0].email;
+                    document.getElementById('stu-initials').innerText = data[0].full_name.charAt(0);
                 } else {
-                    showAlert("INCORRECT CREDENTIALS");
+                    showAlert("ACCESS DENIED");
                     btn.innerText = "ACCESS PORTAL"; btn.disabled = false;
                 }
-            } catch (err) {
-                showAlert("CONNECTION ERROR");
-                btn.innerText = "ACCESS PORTAL"; btn.disabled = false;
-            }
+            } catch (err) { showAlert("DB ERROR"); btn.disabled = false; }
+        }
+
+        async function handleExamUnlock() {
+            const key = document.getElementById('exam-key-input').value.trim();
+            if(!key) return showAlert("ENTER KEY");
+
+            try {
+                // 1. Get Exam + Config (The Blueprint)
+                const { data: exam, error } = await supabase
+                    .from('exams')
+                    .select('*, exam_config(*)')
+                    .eq('exam_key', key)
+                    .single();
+
+                if(error || !exam) return showAlert("INVALID KEY");
+
+                // 2. Get the Questions (The Data)
+                const { data: qs, error: qError } = await supabase
+                    .from('questions')
+                    .select('*')
+                    .in('id', exam.question_ids);
+
+                if(qError) throw qError;
+                activeQuestions = qs;
+
+                startExamSession(exam.title, exam.exam_config.timer_minutes);
+            } catch (err) { showAlert("EXAM LOAD FAILED"); }
+        }
+
+        function startExamSession(title, mins) {
+            document.getElementById('unlock-zone').style.display = 'none';
+            
+            // Start Countdown
+            let time = mins * 60;
+            const sub = document.getElementById('page-sub');
+            
+            timerInterval = setInterval(() => {
+                let m = Math.floor(time / 60);
+                let s = time % 60;
+                sub.innerText = `TIME REMAINING: ${m}:${s < 10 ? '0' : ''}${s}`;
+                sub.style.color = time < 60 ? 'var(--red)' : 'var(--gold)';
+                if(time <= 0) { clearInterval(timerInterval); submitQuiz(); }
+                time--;
+            }, 1000);
+
+            // Render Questions
+            const area = document.getElementById('quiz-area');
+            area.innerHTML = `
+                <h2 style="font-family:var(--font-head); margin-bottom:20px;">${title}</h2>
+                ${activeQuestions.map((q, i) => `
+                    <div class="card">
+                        <p style="font-weight:600; margin-bottom:12px;">${i+1}. ${q.question_text}</p>
+                        <label class="option-label"><input type="radio" name="${q.id}" value="A"> A. ${q.choice_a}</label>
+                        <label class="option-label"><input type="radio" name="${q.id}" value="B"> B. ${q.choice_b}</label>
+                        <label class="option-label"><input type="radio" name="${q.id}" value="C"> C. ${q.choice_c}</label>
+                        <label class="option-label"><input type="radio" name="${q.id}" value="D"> D. ${q.choice_d}</label>
+                    </div>
+                `).join('')}
+                <button class="btn-login" onclick="submitQuiz()">FINISH & SUBMIT</button>
+            `;
+        }
+
+        function submitQuiz() {
+            clearInterval(timerInterval);
+            showAlert("EXAM SUBMITTED SUCCESSFULLY");
+            document.getElementById('quiz-area').innerHTML = "";
+            document.getElementById('unlock-zone').style.display = 'block';
+            switchTab('dashboard', document.querySelector('.nav-item'));
         }
     </script>
 </body>
