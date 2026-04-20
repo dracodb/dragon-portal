@@ -269,7 +269,7 @@
             area.innerHTML = html + `<button id="submit-btn" class="btn-login" style="margin-top:20px;" onclick="submitQuiz()">FINISH & SUBMIT</button>`;
         }
 
-        async function submitQuiz() {
+       async function submitQuiz() {
     const btn = document.getElementById('submit-btn');
     if(btn) { btn.innerText = "RECORDING..."; btn.disabled = true; }
     clearInterval(timerInterval);
@@ -281,6 +281,7 @@
     let correct = 0;
     activeQuestions.forEach(q => {
         const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+        // We compare the selected choice (e.g., 'A') to the correct_choice in the DB
         if (sel && sel.value === q.correct_choice) correct++;
     });
 
@@ -289,7 +290,8 @@
     try {
         // Send data to Supabase
         const { error } = await getClient().from('results').insert([{
-            student_email: currentUser.email, // MATCHES SQL student_email
+            student_email: currentUser.email, 
+            exam_key: activeExamKey,        // <--- Added the Exam Key here
             exam_title: title,
             score: parseInt(correct),
             total: parseInt(activeQuestions.length),
@@ -305,6 +307,8 @@
         document.getElementById('unlock-zone').style.display = 'block';
         document.getElementById('page-sub').innerText = "Welcome back";
         document.getElementById('page-sub').style.color = "var(--text-muted)";
+        
+        // Return to Dashboard
         switchTab('dashboard', document.querySelector('.nav-item'));
         
     } catch (err) { 
@@ -313,4 +317,5 @@
         if(btn) { btn.innerText = "FINISH & SUBMIT"; btn.disabled = false; }
     }
 }
-    </script>
+      
+</script>
