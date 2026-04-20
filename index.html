@@ -4,197 +4,160 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Flaming Dragon — Student Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --red: #880b18; --red-dark: #5c0710; --red-light: #a81020; --gold: #ffcf00;
-            --gold-dim: #c9a200; --dark: #0f0f0f; --dark2: #181818; --surface: #1e1e1e;
+            --red: #880b18; --gold: #ffcf00; --dark: #0f0f0f; --surface: #1e1e1e;
             --border: rgba(255,255,255,0.08); --text: #f0ede8; --text-dim: #9a9590;
             --font-head: 'Oswald', sans-serif; --font-body: 'Montserrat', sans-serif;
             --sidebar-w: 240px;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--dark); color: var(--text); font-family: var(--font-body); font-size: 14px; min-height: 100vh; }
+        body { background: var(--dark); color: var(--text); font-family: var(--font-body); margin: 0; overflow-x: hidden; min-height: 100vh; }
 
-        /* ── LOGIN OVERLAY ─────────────────────── */
+        /* ── DEBUG TAG ── */
+        .v-tag { position: fixed; bottom: 10px; right: 10px; font-family: monospace; font-size: 10px; color: var(--gold); z-index: 9999; background: #000; padding: 2px 5px; border: 1px solid var(--border); }
+
+        /* ── LOGIN OVERLAY ── */
         .login-overlay { position: fixed; inset: 0; background: var(--dark); z-index: 5000; display: flex; align-items: center; justify-content: center; }
         .login-card { background: var(--surface); padding: 40px; border-radius: 24px; border: 1px solid var(--border); width: 340px; text-align: center; }
-        .input-group { position: relative; margin-bottom: 15px; }
-        .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 14px; border-radius: 10px; width: 100%; box-sizing: border-box; outline: none; }
-        .toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: 10px; cursor: pointer; font-weight: bold; }
-        .v-tag { position: fixed; bottom: 10px; right: 10px; font-family: monospace; font-size: 10px; color: var(--gold); z-index: 6000; opacity: 0.5; }
-
-        /* ── APP LAYOUT ────────────────────────── */
-        .app { display: none; min-height: 100vh; }
-        .sidebar { width: var(--sidebar-w); background: var(--dark2); border-right: 1px solid var(--border); position: fixed; height: 100vh; display: flex; flex-direction: column; }
-        .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
-        .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid var(--border); }
-        .logo-flame { width: 36px; height: 36px; background: var(--red); border-radius: 8px; margin-right: 10px; position: relative; display: inline-block; vertical-align: middle; }
+        .logo-flame { width: 40px; height: 40px; background: var(--red); border-radius: 8px; margin: 0 auto 15px; position: relative; }
         .logo-flame::after { content:''; position:absolute; bottom:5px; left:50%; transform:translateX(-50%); border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:18px solid var(--gold); }
         
-        .sidebar-student { padding: 16px 20px; border-bottom: 1px solid var(--border); }
-        .student-avatar { width: 40px; height: 40px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); color: var(--gold); font-weight: 700; margin-bottom: 8px; }
+        .input-group { position: relative; margin-bottom: 15px; }
+        .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 14px; border-radius: 10px; width: 100%; box-sizing: border-box; outline: none; }
+        .toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: 10px; cursor: pointer; font-weight: bold; z-index: 20; }
+        .btn { background: var(--red); color: white; padding: 14px; border-radius: 10px; border: none; font-family: var(--font-head); font-weight: 600; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; }
 
-        .nav-item { padding: 12px 20px; color: var(--text-dim); cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-size: 13px; font-weight: 500; transition: 0.2s; }
-        .nav-item.active { color: var(--gold); background: rgba(136,11,24,0.25); border-left: 3px solid var(--gold); }
-
-        .page-content { padding: 30px; max-width: 1100px; margin: 0 auto; width: 100%; }
+        /* ── APP LAYOUT ── */
+        .app-container { display: none; min-height: 100vh; width: 100%; }
+        .sidebar { width: var(--sidebar-w); background: #111; border-right: 1px solid var(--border); padding: 30px 20px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        
+        .nav-item { padding: 12px; color: var(--text-dim); cursor: pointer; border-radius: 8px; margin-bottom: 5px; font-weight: 600; }
+        .nav-item.active { background: rgba(136,11,24,0.25); color: var(--gold); border-left: 3px solid var(--gold); }
         .page { display: none; }
         .page.active { display: block; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .btn { background: var(--red); color: white; padding: 12px; border-radius: 8px; border: none; font-family: var(--font-head); font-weight: 600; cursor: pointer; text-transform: uppercase; }
-        
-        /* Results Specific Styles */
-        .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; }
-        .result-header { padding: 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-        .result-body { display: none; padding: 20px; border-top: 1px solid var(--border); background: var(--dark); }
-        .result-card.open .result-body { display: block; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; position: relative; }
+            .main-content { padding: 20px; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.2.0</div>
+    <div class="v-tag">DRAGON_VER_1.2.1</div>
 
-    <div id="login-overlay" class="login-overlay">
+    <div id="login-screen" class="login-overlay">
         <div class="login-card">
             <div class="logo-flame"></div>
-            <h2 style="font-family: var(--font-head); margin-bottom: 20px;">FLAMING DRAGON</h2>
+            <h2 style="font-family: var(--font-head); margin-bottom: 20px; letter-spacing: 1px;">FLAMING DRAGON</h2>
             <div class="input-group">
-                <input type="email" id="login-email" class="input-dark" placeholder="Email Address">
+                <input type="email" id="email" class="input-dark" placeholder="Email Address">
             </div>
             <div class="input-group">
-                <input type="password" id="login-pass" class="input-dark" placeholder="Password">
-                <div class="toggle-btn" onclick="togglePass()">SHOW</div>
+                <input type="password" id="pass" class="input-dark" placeholder="Password">
+                <div class="toggle-btn" id="toggleText" onclick="handleToggle()">SHOW</div>
             </div>
-            <button class="btn" style="width:100%" onclick="portalLogin()">Access Portal</button>
+            <button class="btn" id="login-btn" onclick="handleLogin()">Access Portal</button>
         </div>
     </div>
 
-    <div id="app" class="app">
+    <div id="app" class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-logo">
-                <span class="logo-flame"></span>
-                <span style="font-family:var(--font-head); font-weight:700; font-size:16px;">DRAGON PORTAL</span>
+            <div style="margin-bottom: 30px;">
+                <h3 style="font-family: var(--font-head); margin: 0;">DRAGON PORTAL</h3>
+                <p id="stu-email" style="font-size: 10px; color: var(--gold);"></p>
             </div>
-            <div class="sidebar-student">
-                <div class="student-avatar" id="stu-initials">?</div>
-                <div id="stu-name" style="font-weight:600; font-family:var(--font-head); text-transform:uppercase;">Student Name</div>
-                <div id="stu-email" style="font-size:11px; color:var(--gold);">Email</div>
+            <div class="nav-item active" onclick="switchTab('dash', this)">Dashboard</div>
+            <div class="nav-item" onclick="switchTab('exam', this)">Exams Portal</div>
+            <div class="nav-item" onclick="switchTab('res', this)">My Results</div>
+            <div style="margin-top: 50px;">
+                <button class="btn" style="background:transparent; border:1px solid var(--border); font-size:12px;" onclick="location.reload()">LOGOUT</button>
             </div>
-            <nav style="padding-top:20px;">
-                <button class="nav-item active" onclick="navigate('dashboard', this)">Dashboard</button>
-                <button class="nav-item" onclick="navigate('exams', this)">Exams Portal</button>
-                <button class="nav-item" onclick="navigate('results', this)">My Results</button>
-                <button class="nav-item" style="margin-top:20px; color:var(--red-light);" onclick="location.reload()">Logout</button>
-            </nav>
         </aside>
 
-        <main class="main">
-            <div class="page-content">
-                <div id="page-dashboard" class="page active">
-                    <h1 style="font-family:var(--font-head); margin-bottom:20px;">DASHBOARD</h1>
-                    <div class="card">
-                        <h3>Welcome to the Dragon Vault</h3>
-                        <p style="color:var(--text-dim); margin-top:10px;">Your training is synchronized with the REBLEX 2026 database.</p>
-                    </div>
+        <main class="main-content">
+            <div id="tab-dash" class="page active">
+                <h1 style="font-family: var(--font-head); margin-bottom: 20px;">DASHBOARD</h1>
+                <div class="card">
+                    <h3>Welcome back!</h3>
+                    <p style="color: var(--text-dim); margin-top: 10px;">Your session is active. Select a tab to continue.</p>
                 </div>
-
-                <div id="page-exams" class="page">
-                    <h1 style="font-family:var(--font-head); margin-bottom:20px;">EXAMS PORTAL</h1>
-                    <div class="card">
-                        <h3>Unlock Mock Exam</h3>
-                        <p style="font-size:12px; color:var(--text-dim); margin-bottom:15px;">Enter your key to fetch questions from the server.</p>
-                        <input type="text" id="exam-key" class="input-dark" style="width:200px;" placeholder="DRACO-XXXX">
-                        <button class="btn" style="padding:10px 20px; margin-left:10px;">Fetch Exam</button>
-                    </div>
+            </div>
+            <div id="tab-exam" class="page">
+                <h1 style="font-family: var(--font-head);">EXAMS PORTAL</h1>
+                <div class="card">
+                    <p>Exam engine loading...</p>
                 </div>
-
-                <div id="page-results" class="page">
-                    <h1 style="font-family:var(--font-head); margin-bottom:20px;">MY RESULTS</h1>
-                    <div id="results-container">
-                        <div class="card"><p style="color:var(--text-dim);">No exam data found yet.</p></div>
-                    </div>
+            </div>
+            <div id="tab-res" class="page">
+                <h1 style="font-family: var(--font-head);">MY RESULTS</h1>
+                <div class="card" id="results-list">
+                    <p>No results recorded.</p>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
+        // Use standard initialization to avoid "Circular" reference errors
         const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
         const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
         const supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
-        function togglePass() {
-            const p = document.getElementById('login-pass');
-            p.type = p.type === 'password' ? 'text' : 'password';
-            event.target.innerText = p.type === 'password' ? 'SHOW' : 'HIDE';
+        function handleToggle() {
+            const p = document.getElementById('pass');
+            const t = document.getElementById('toggleText');
+            if (p.type === "password") {
+                p.type = "text";
+                t.innerText = "HIDE";
+            } else {
+                p.type = "password";
+                t.innerText = "SHOW";
+            }
         }
 
-        function navigate(pageId, btn) {
+        async function handleLogin() {
+            const e = document.getElementById('email').value.trim();
+            const p = document.getElementById('pass').value.trim();
+            const b = document.getElementById('login-btn');
+
+            if(!e || !p) return alert("Enter credentials.");
+            b.innerText = "CONNECTING...";
+
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', e)
+                    .eq('password', p)
+                    .limit(1);
+
+                if (data && data.length > 0) {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app').style.display = 'flex';
+                    document.getElementById('stu-email').innerText = data[0].email;
+                } else {
+                    alert("Login failed. Check your data.");
+                    b.innerText = "Access Portal";
+                }
+            } catch (err) {
+                alert("Database connection error.");
+                b.innerText = "Access Portal";
+            }
+        }
+
+        function switchTab(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
-            btn.classList.add('active');
-        }
-
-        async function portalLogin() {
-            const email = document.getElementById('login-email').value.trim();
-            const pass = document.getElementById('login-pass').value.trim();
-            const btn = event.target;
-
-            if(!email || !pass) return alert("Fill fields.");
-            btn.innerText = "AUTHENTICATING...";
-
-            const { data, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('email', email)
-                .eq('password', pass)
-                .limit(1);
-
-            if (data && data.length > 0) {
-                const user = data[0];
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('app').style.display = 'flex';
-                
-                // Update Sidebar
-                document.getElementById('stu-name').innerText = user.full_name || "Dragon Candidate";
-                document.getElementById('stu-email').innerText = user.email;
-                document.getElementById('stu-initials').innerText = (user.full_name || "D").charAt(0);
-                
-                fetchResults(user.id);
-            } else {
-                alert("Login Failed. Check Supabase 'users' table.");
-                btn.innerText = "Access Portal";
-            }
-        }
-
-        async function fetchResults(userId) {
-            // Note: Update 'results' to match your actual table name in Supabase
-            const { data, error } = await supabase
-                .from('exam_results')
-                .select('*')
-                .eq('user_id', userId);
-
-            if (data && data.length > 0) {
-                const container = document.getElementById('results-container');
-                container.innerHTML = data.map((r, i) => `
-                    <div class="result-card" id="res-${i}">
-                        <div class="result-header" onclick="document.getElementById('res-${i}').classList.toggle('open')">
-                            <div>
-                                <strong style="color:var(--gold)">${r.exam_name || 'Mock Exam'}</strong>
-                                <div style="font-size:11px; color:var(--text-dim)">Taken on: ${new Date(r.created_at).toLocaleDateString()}</div>
-                            </div>
-                            <div style="font-family:var(--font-head); font-size:20px;">${r.score_percent}%</div>
-                        </div>
-                        <div class="result-body">
-                            <p>Correct: ${r.correct_answers} / Total: ${r.total_questions}</p>
-                        </div>
-                    </div>
-                `).join('');
-            }
+            document.getElementById('tab-' + id).classList.add('active');
+            el.classList.add('active');
         }
     </script>
 </body>
