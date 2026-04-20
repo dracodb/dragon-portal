@@ -3,33 +3,26 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>FD Student Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <title>Flaming Dragon — Student Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --red: #880b18; --gold: #ffcf00; --dark: #0f0f0f; --dark2: #181818;
-            --surface: #1e1e1e; --border: rgba(255,255,255,0.08); --text: #f0ede8;
+            --red: #880b18; --red-dark: #5c0710; --red-light: #a81020;
+            --gold: #ffcf00; --gold-dim: #c9a200; --dark: #0f0f0f;
+            --dark2: #181818; --dark3: #222222; --dark4: #2a2a2a;
+            --surface: #1e1e1e; --border: rgba(255,255,255,0.08);
+            --text: #f0ede8; --text-dim: #9a9590; --text-muted: #5a5550;
             --font-head: 'Oswald', sans-serif; --font-body: 'Montserrat', sans-serif;
-            --sidebar-w: 240px;
+            --nav-h: 64px; --sidebar-w: 240px;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--dark); color: var(--text); font-family: var(--font-body); margin: 0; height: 100vh; overflow: hidden; }
+        html, body { background: var(--dark); color: var(--text); font-family: var(--font-body); font-size: 14px; min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
         .v-tag { position: fixed; bottom: 10px; right: 10px; font-family: monospace; font-size: 10px; color: var(--gold); z-index: 9999; opacity: 0.5; background: #000; padding: 4px; border: 1px solid var(--border); }
 
-        /* ── CUSTOM ALERT UI ── */
-        #custom-alert {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-            background: var(--red); color: white; padding: 15px 25px; border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--gold);
-            z-index: 9000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            font-weight: 600; font-family: var(--font-head); letter-spacing: 1px;
-        }
-        #custom-alert.show { transform: translateX(-50%) translateY(0); }
-
-        /* ── LOGIN OVERLAY ── */
+        /* ── LOGIN GATE ── */
         #login-ui { position: fixed; inset: 0; background: var(--dark); z-index: 8000; display: flex; align-items: center; justify-content: center; }
         .login-card { background: var(--surface); padding: 40px; border-radius: 24px; border: 1px solid var(--border); width: 340px; text-align: center; }
         .input-group { position: relative; margin-bottom: 15px; }
@@ -37,26 +30,49 @@
         .toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: 10px; cursor: pointer; font-weight: bold; }
         .btn-login { background: var(--red); color: white; padding: 14px; border-radius: 10px; border: none; font-family: var(--font-head); font-weight: 600; cursor: pointer; width: 100%; text-transform: uppercase; }
 
-        /* ── MAIN PORTAL LAYOUT ── */
-        #app-portal { display: none; height: 100vh; width: 100%; }
-        .sidebar { width: var(--sidebar-w); background: var(--dark2); border-right: 1px solid var(--border); padding: 24px 20px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .main-content { flex: 1; overflow-y: auto; background: var(--dark); }
-        .nav-item { padding: 12px 15px; color: #9a9590; cursor: pointer; border-radius: 8px; margin-bottom: 5px; font-weight: 500; font-size: 13px; text-align: left; background: none; border: none; width: 100%; }
-        .nav-item.active { background: rgba(136,11,24,0.25); color: var(--gold); border-left: 3px solid var(--gold); }
-        .page { display: none; padding: 40px; }
+        /* ── CUSTOM ALERT ── */
+        #custom-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--red); color: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--gold); z-index: 9000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 600; font-family: var(--font-head); }
+        #custom-alert.show { transform: translateX(-50%) translateY(0); }
+
+        /* ── APP LAYOUT ── */
+        .app { display: none; min-height: 100vh; }
+        .sidebar { width: var(--sidebar-w); background: var(--dark2); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+        .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Insert your Sidebar Logo/Avatar/Nav CSS here - I've kept it from your design snippet */
+        .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); }
+        .logo-flame { width: 36px; height: 36px; background: var(--red); border-radius: 8px; position: relative; margin-right: 10px; display: inline-block; vertical-align: middle;}
+        .logo-flame::before { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 22px solid var(--gold); filter: drop-shadow(0 0 4px rgba(255,207,0,0.6)); }
+        
+        .sidebar-student { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+        .student-avatar { width: 40px; height: 40px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--gold); border: 2px solid var(--red-light); margin-bottom: 10px;}
+
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 20px; color: var(--text-dim); cursor: pointer; transition: 0.15s; font-size: 13px; font-weight: 500; border: none; background: none; width: 100%; text-align: left; }
+        .nav-item.active { color: var(--gold); background: rgba(136,11,24,0.25); position: relative; }
+        .nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--gold); }
+
+        .topbar { height: var(--nav-h); background: var(--dark2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; position: sticky; top: 0; z-index: 50; }
+        .page-content { padding: 28px 24px; flex: 1; }
+        .page { display: none; }
         .page.active { display: block; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        
+        /* Your Stat Grid & Cards */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px; position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); opacity: 0.5; }
+        .stat-card.highlight::before { opacity: 1; }
     </style>
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.2.6</div>
-
+    <div class="v-tag">DRAGON_VER_1.2.7_FINAL</div>
     <div id="custom-alert">INCORRECT CREDENTIALS</div>
 
     <div id="login-ui">
         <div class="login-card">
-            <h2 style="font-family: var(--font-head); margin-bottom: 20px;">FLAMING DRAGON STUDENT PORTAL</h2>
+            <div class="logo-flame"></div>
+            <h2 style="font-family: var(--font-head); margin-bottom: 20px;">FLAMING DRAGON</h2>
             <div class="input-group">
                 <input type="email" id="email" class="input-dark" placeholder="Email Address">
             </div>
@@ -68,72 +84,90 @@
         </div>
     </div>
 
-    <div id="app-portal">
+    <div class="app" id="app-portal">
         <aside class="sidebar">
-            <div style="margin-bottom: 30px;">
-                <h3 style="font-family: var(--font-head); color: var(--gold);">STUDENT PORTAL</h3>
-                <p id="user-display" style="font-size: 11px; margin-top: 5px;"></p>
+            <div class="sidebar-logo">
+                <div class="logo-flame"></div>
+                <span style="font-family:var(--font-head); font-weight:700; letter-spacing:1px;">FLAMING DRAGON</span>
             </div>
-            <button class="nav-item active" onclick="switchTab('dashboard', this)">Dashboard</button>
-            <button class="nav-item" onclick="switchTab('exams', this)">Exams</button>
-            <button class="nav-item" onclick="switchTab('results', this)">My Results</button>
-            <button class="nav-item" style="margin-top: auto; color: var(--red);" onclick="location.reload()">Logout</button>
+            <div class="sidebar-student">
+                <div class="student-avatar" id="stu-initials">?</div>
+                <div class="student-name" id="stu-name">CANDIDATE</div>
+                <div id="stu-email" style="font-size:10px; color:var(--gold); margin-top:4px;">email@example.com</div>
+            </div>
+            <nav style="flex:1; padding-top:12px;">
+                <button class="nav-item active" onclick="switchTab('dashboard', this)">Dashboard</button>
+                <button class="nav-item" onclick="switchTab('exams', this)">Exams</button>
+                <button class="nav-item" onclick="switchTab('results', this)">My Results</button>
+                <button class="nav-item" style="margin-top:auto; color:var(--red);" onclick="location.reload()">Logout</button>
+            </nav>
         </aside>
 
-        <main class="main-content">
-            <div id="page-dashboard" class="page active">
-                <h1 style="font-family: var(--font-head); margin-bottom: 20px;">DASHBOARD</h1>
-                <div class="card">
-                    <h3>System Online.</h3>
-                    <p style="color: #9a9590; margin-top: 10px;">Portal Version 1.2.6 loaded successfully.</p>
+        <div class="main">
+            <header class="topbar">
+                <div>
+                    <div style="font-family:var(--font-head); font-size:18px; font-weight:600; letter-spacing:1px;" id="page-title">DASHBOARD</div>
+                    <div style="font-size:12px; color:var(--text-muted);" id="page-sub">Welcome back</div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div id="tab-dashboard" class="page active">
+                    <div class="stat-grid">
+                        <div class="stat-card highlight">
+                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Overall Avg</div>
+                            <div style="font-family:var(--font-head); font-size:28px; font-weight:700; color:var(--gold);">74%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Exams Taken</div>
+                            <div style="font-family:var(--font-head); font-size:28px; font-weight:700;">3</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>System Status: Online</h3>
+                        <p style="color:var(--text-dim); margin-top:10px;">Database connected. Design Version 1.2.7 is active.</p>
+                    </div>
+                </div>
+
+                <div id="tab-exams" class="page">
+                    <h2 style="font-family:var(--font-head);">EXAMS PORTAL</h2>
+                </div>
+
+                <div id="tab-results" class="page">
+                    <h2 style="font-family:var(--font-head);">MY RESULTS</h2>
                 </div>
             </div>
-
-            <div id="page-exams" class="page">
-                <h1 style="font-family: var(--font-head); margin-bottom: 20px;">EXAMS</h1>
-                <div class="card"><p>Select an exam to begin.</p></div>
-            </div>
-
-            <div id="page-results" class="page">
-                <h1 style="font-family: var(--font-head); margin-bottom: 20px;">MY RESULTS</h1>
-                <div class="card"><p>No data recorded.</p></div>
-            </div>
-        </main>
+        </div>
     </div>
 
     <script>
         function showAlert(msg) {
-            const alertBox = document.getElementById('custom-alert');
-            alertBox.innerText = msg;
-            alertBox.classList.add('show');
-            setTimeout(() => { alertBox.classList.remove('show'); }, 3000);
+            const a = document.getElementById('custom-alert');
+            a.innerText = msg; a.classList.add('show');
+            setTimeout(() => a.classList.remove('show'), 3000);
         }
 
         function localToggle() {
             const p = document.getElementById('pass');
-            const btn = event.target;
-            p.type = (p.type === "password") ? "text" : "password";
-            btn.innerText = (p.type === "password") ? "SHOW" : "HIDE";
+            p.type = p.type === 'password' ? 'text' : 'password';
+            event.target.innerText = p.type === 'password' ? 'SHOW' : 'HIDE';
         }
 
-        function switchTab(tabId, el) {
+        function switchTab(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-' + tabId).classList.add('active');
+            document.getElementById('tab-' + id).classList.add('active');
             el.classList.add('active');
+            document.getElementById('page-title').innerText = id.toUpperCase();
         }
 
         async function localLogin() {
             const btn = document.getElementById('login-btn');
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('pass').value.trim();
-
-            if (!email || !pass) {
-                showAlert("PLEASE FILL ALL FIELDS");
-                return;
-            }
-
-            btn.innerText = "AUTHENTICATING...";
+            const e = document.getElementById('email').value.trim();
+            const p = document.getElementById('pass').value.trim();
+            if (!e || !p) return showAlert("FILL ALL FIELDS");
+            
+            btn.innerText = "LOADING...";
             btn.disabled = true;
 
             try {
@@ -141,26 +175,22 @@
                 const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
                 const supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('email', email)
-                    .eq('password', pass)
-                    .limit(1);
+                const { data, error } = await supabase.from('users').select('*').eq('email', e).eq('password', p).limit(1);
 
                 if (data && data.length > 0) {
+                    const user = data[0];
                     document.getElementById('login-ui').style.display = 'none';
                     document.getElementById('app-portal').style.display = 'flex';
-                    document.getElementById('user-display').innerText = data[0].email;
+                    document.getElementById('stu-email').innerText = user.email;
+                    document.getElementById('stu-name').innerText = user.full_name || "CANDIDATE";
+                    document.getElementById('stu-initials').innerText = (user.full_name || "C").charAt(0).toUpperCase();
                 } else {
                     showAlert("INCORRECT CREDENTIALS");
-                    btn.innerText = "Access Portal";
-                    btn.disabled = false;
+                    btn.innerText = "ACCESS PORTAL"; btn.disabled = false;
                 }
             } catch (err) {
                 showAlert("CONNECTION ERROR");
-                btn.innerText = "Access Portal";
-                btn.disabled = false;
+                btn.innerText = "ACCESS PORTAL"; btn.disabled = false;
             }
         }
     </script>
