@@ -61,7 +61,7 @@
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.3.3_FIXED</div>
+    <div class="v-tag">DRAGON_VER_1.3.4</div>
     <div id="custom-alert">ALERT</div>
 
     <div id="login-ui">
@@ -182,51 +182,54 @@
             document.getElementById('page-title').innerText = id.toUpperCase();
         }
 
-        async function handleExamUnlock() {
+          async function handleExamUnlock() {
     const key = document.getElementById('exam-key-input').value.trim();
     if(!key) return showAlert("ENTER KEY");
 
     try {
-        // 1. Try to fetch the exam ONLY first to see if the key exists
-        const { data: exam, error: examError } = await getClient()
+        const db = getClient();
+        
+        // 1. Fetch Exam
+        const { data: exam, error: examError } = await db
             .from('exams')
             .select('*')
             .eq('exam_key', key)
             .single();
 
-        if (examError || !exam) {
-            console.error("Exam Key Check Failed:", examError);
-            return showAlert("KEY NOT FOUND IN DATABASE");
+        if (examError) {
+            return showAlert("DB ERROR (EXAM): " + examError.message);
         }
 
-        // 2. Now try to fetch the config specifically
-        const { data: config, error: configError } = await getClient()
+        // 2. Fetch Config
+        const { data: config, error: configError } = await db
             .from('exam_config')
             .select('*')
             .eq('config_id', exam.config_id)
             .single();
 
-        if (configError || !config) {
-            console.error("Config Link Failed:", configError);
-            return showAlert("EXAM EXISTS BUT CONFIG IS MISSING");
+        if (configError) {
+            return showAlert("DB ERROR (CONFIG): " + configError.message);
         }
 
-        // 3. Finally get the questions
-        const { data: qs } = await getClient()
+        // 3. Fetch Questions
+        const { data: qs, error: qError } = await db
             .from('questions')
             .select('*')
             .in('id', exam.question_ids);
 
-        // Success!
+        if (qError) {
+            return showAlert("DB ERROR (QUESTIONS): " + qError.message);
+        }
+
+        // Success Sequence
         activeQuestions = qs;
         startExamSession(exam.title, config.timer_minutes);
 
     } catch (err) { 
-        console.error("System Error:", err);
-        showAlert("CRITICAL LOAD ERROR"); 
+        // This catches network issues or code typos
+        alert("CRITICAL SYSTEM ERROR: " + err.message); 
     }
 }
-
         function renderQuiz(title, qs) {
             document.getElementById('unlock-zone').style.display = 'none';
             const area = document.getElementById('quiz-area');
