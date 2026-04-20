@@ -14,12 +14,8 @@
         }
         body { background: var(--dark); color: var(--text); font-family: var(--font-body); margin: 0; overflow: hidden; height: 100vh; }
         
-        /* Version Tag - FORCED TO TOP */
-        .v-tag { 
-            position: fixed; bottom: 10px; right: 10px; 
-            font-family: monospace; font-size: 10px; color: var(--gold); 
-            z-index: 9999; background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 4px;
-        }
+        /* Debug Tag */
+        .v-tag { position: fixed; bottom: 10px; right: 10px; font-family: monospace; font-size: 10px; color: var(--gold); z-index: 9999; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); }
 
         /* Login UI */
         .login-overlay { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; align-items: center; justify-content: center; }
@@ -31,25 +27,18 @@
         .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 14px; border-radius: 10px; width: 100%; box-sizing: border-box; outline: none; font-size: 14px; }
         .input-dark:focus { border-color: var(--gold); }
         
-        .toggle-pass { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--gold); font-size: 10px; font-weight: bold; z-index: 10; padding: 5px; }
+        .toggle-pass { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--gold); font-size: 10px; font-weight: bold; z-index: 100; padding: 10px; background: #111; }
 
-        /* Main Layout */
-        .app-container { display: none; min-height: 100vh; flex-direction: row; }
-        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 30px 20px; flex-shrink: 0; }
-        .nav-item { padding: 14px; cursor: pointer; color: var(--text-dim); border-radius: 10px; margin-bottom: 8px; font-weight: 600; }
-        .nav-item.active { background: rgba(136,11,24,0.25); color: var(--gold); border-left: 4px solid var(--gold); }
-        
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px; }
-        .btn { background: var(--red); color: white; border: none; padding: 14px; border-radius: 10px; font-family: var(--font-head); cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; }
-        
-        .page { display: none; }
-        .page.active { display: block; }
+        .btn { background: var(--red); color: white; border: none; padding: 14px; border-radius: 10px; font-family: var(--font-head); cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: 0.2s; }
+        .btn:hover { background: #a31220; }
+
+        /* Main App (Hidden by default) */
+        .app-container { display: none; min-height: 100vh; width: 100%; }
     </style>
 </head>
 <body>
 
-    <div class="v-tag">VER_1.0.9</div>
+    <div class="v-tag">DRAGON_VER_1.1.0</div>
 
     <div id="login-overlay" class="login-overlay">
         <div class="login-card">
@@ -63,87 +52,94 @@
             
             <div class="input-group">
                 <input type="password" id="pass" class="input-dark" placeholder="Password">
-                <span class="toggle-pass" id="toggleText" onclick="togglePassword()">SHOW</span>
+                <div class="toggle-pass" onclick="togglePassword()">SHOW</div>
             </div>
             
-            <button id="login-btn" class="btn" onclick="doLogin()">ACCESS PORTAL</button>
+            <button id="login-btn" class="btn" onclick="portalLogin()">ACCESS PORTAL</button>
         </div>
     </div>
 
     <div id="app" class="app-container">
-        <aside class="sidebar">
-            <h3 style="font-family: var(--font-head);">DRAGON PORTAL</h3>
-            <p id="user-display" style="color: var(--gold); font-size: 11px;"></p>
-            <div class="nav-item active" onclick="switchPage('dashboard', this)">Dashboard</div>
-            <div class="nav-item" onclick="switchPage('exams', this)">Exams</div>
-            <div class="nav-item" onclick="switchPage('results', this)">Results</div>
-            <div style="margin-top: 40px;"><button class="btn" onclick="location.reload()">LOGOUT</button></div>
-        </aside>
-        <main class="main-content">
-            <div id="page-dashboard" class="page active">
-                <div class="card"><h1>Dashboard v1.0.9</h1><p>System online.</p></div>
-            </div>
-            <div id="page-exams" class="page"><div class="card"><h1>Exam Portal</h1></div></div>
-            <div id="page-results" class="page"><div class="card"><h1>Results Table</h1></div></div>
-        </main>
+        <div style="padding: 50px; text-align: center;">
+            <h1 style="font-family: var(--font-head);">DRAGON VAULT UNLOCKED</h1>
+            <p id="user-display"></p>
+            <button onclick="location.reload()" class="btn" style="width: 200px; background: transparent; border: 1px solid var(--border);">LOGOUT</button>
+        </div>
     </div>
 
     <script>
+        // 1. Safety Check: Initialize Supabase globally but wrapped in a try/catch
         const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
         const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
-        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+        let supabase;
 
-        // Fixed Toggle Function
+        try {
+            supabase = window.supabase.createClient(SB_URL, SB_KEY);
+            console.log("Supabase connected.");
+        } catch (e) {
+            console.error("Supabase fail:", e);
+        }
+
+        // 2. Toggle Password (Self-contained, no DB needed)
         function togglePassword() {
+            console.log("Toggle clicked");
             const passField = document.getElementById('pass');
-            const toggleText = document.getElementById('toggleText');
+            const toggleDiv = document.querySelector('.toggle-pass');
+            
             if (passField.type === "password") {
                 passField.type = "text";
-                toggleText.innerText = "HIDE";
+                toggleDiv.innerText = "HIDE";
             } else {
                 passField.type = "password";
-                toggleText.innerText = "SHOW";
+                toggleDiv.innerText = "SHOW";
             }
         }
 
-        async function doLogin() {
-            const e = document.getElementById('email').value.trim();
-            const p = document.getElementById('pass').value.trim();
+        // 3. Login Function
+        async function portalLogin() {
+            console.log("Login clicked");
             const btn = document.getElementById('login-btn');
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('pass').value.trim();
 
-            if(!e || !p) return alert("Missing fields");
+            if (!email || !password) {
+                alert("Please fill in all fields.");
+                return;
+            }
 
-            btn.innerText = "VERIFYING...";
+            if (!supabase) {
+                alert("Critical Error: Database connection failed. Refresh the page.");
+                return;
+            }
+
+            btn.innerText = "AUTHENTICATING...";
             btn.disabled = true;
 
             try {
                 const { data, error } = await supabase
                     .from('users')
                     .select('*')
-                    .eq('email', e)
-                    .eq('password', p)
+                    .eq('email', email)
+                    .eq('password', password)
                     .limit(1);
 
-                if (error || !data || data.length === 0) {
-                    alert("Login Failed.");
+                if (error) {
+                    alert("Database Error: " + error.message);
                     btn.innerText = "ACCESS PORTAL";
                     btn.disabled = false;
-                } else {
+                } else if (data && data.length > 0) {
                     document.getElementById('login-overlay').style.display = 'none';
-                    document.getElementById('app').style.display = 'flex';
-                    document.getElementById('user-display').innerText = data[0].email;
+                    document.getElementById('app').style.display = 'block';
+                    document.getElementById('user-display').innerText = "Dragon: " + data[0].email;
+                } else {
+                    alert("No account found. Check your credentials.");
+                    btn.innerText = "ACCESS PORTAL";
+                    btn.disabled = false;
                 }
             } catch (err) {
-                alert("Error connecting to Supabase.");
+                alert("System Crash. Check Console.");
                 btn.disabled = false;
             }
-        }
-
-        function switchPage(pageId, el) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
-            el.classList.add('active');
         }
     </script>
 </body>
