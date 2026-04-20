@@ -1,59 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Flaming Dragon — Student Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --red: #880b18; --gold: #ffcf00; --dark: #0f0f0f; --surface: #1e1e1e;
+            --border: rgba(255,255,255,0.08); --text: #f0ede8; --text-dim: #9a9590;
+            --font-head: 'Oswald', sans-serif; --font-body: 'Montserrat', sans-serif;
+        }
+        body { background: var(--dark); color: var(--text); font-family: var(--font-body); margin: 0; }
+        .login-overlay { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: var(--surface); padding: 40px; border-radius: 20px; border: 1px solid var(--border); width: 320px; text-align: center; }
+        .app-container { display: none; min-height: 100vh; flex-direction: row; }
+        .sidebar { width: 240px; background: #111; border-right: 1px solid var(--border); padding: 20px; }
+        .main-content { flex: 1; padding: 40px; }
+        .btn { background: var(--red); color: white; border: none; padding: 12px; border-radius: 8px; font-family: var(--font-head); cursor: pointer; width: 100%; font-weight: bold; }
+        .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        .version-tag { position: fixed; bottom: 10px; right: 10px; font-size: 10px; color: var(--text-dim); }
+        .page { display: none; }
+        .page.active { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="version-tag">PORTAL_VER_1.0.6</div>
+
+<div id="login-overlay" class="login-overlay">
+    <div class="login-card">
+        <h2 style="font-family: var(--font-head);">FLAMING DRAGON</h2>
+        <p style="font-size: 10px; color: var(--gold); margin-bottom: 20px;">STUDENT LOGIN</p>
+        <input type="email" id="student-email" class="input-dark" placeholder="Email">
+        <input type="password" id="student-password" class="input-dark" placeholder="Password">
+        <button id="login-btn" class="btn" onclick="portalLogin()">ACCESS PORTAL</button>
+    </div>
+</div>
+
+<div id="app" class="app-container">
+    <aside class="sidebar">
+        <h3 style="font-family: var(--font-head);">DRAGON PORTAL</h3>
+        <p id="user-display" style="color: var(--gold); font-size: 12px;"></p>
+        <hr style="opacity:0.1; margin: 20px 0;">
+        <div style="cursor:pointer" onclick="location.reload()">Logout</div>
+    </aside>
+    <main class="main-content">
+        <h1>Dashboard</h1>
+        <div style="background: var(--surface); padding: 20px; border-radius: 12px;">
+            Welcome to Version 1.0.6. If you see this, the code is working!
+        </div>
+    </main>
+</div>
+
 <script>
     const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
     const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
-    
+
     async function portalLogin() {
-        console.log("LOGIN TRIGGERED");
-        
-        // 1. Force the button to change immediately (No waiting for Supabase)
+        console.log("Button Clicked");
         const btn = document.getElementById('login-btn');
-        btn.innerText = "CONNECTING...";
-        btn.style.background = "orange"; // Visual proof the code is running
+        const email = document.getElementById('student-email').value;
+        const password = document.getElementById('student-password').value;
 
-        const email = document.getElementById('student-email').value.trim();
-        const password = document.getElementById('student-password').value.trim();
-
-        if (!email || !password) {
-            alert("Please fill in both fields.");
-            btn.innerText = "ACCESS PORTAL";
-            btn.style.background = "";
-            return;
-        }
+        btn.innerText = "AUTHENTICATING...";
 
         try {
-            // 2. Initialize Supabase inside the function to prevent "silent freeze"
             const supabase = window.supabase.createClient(SB_URL, SB_KEY);
-            
             const { data, error } = await supabase
                 .from('users')
                 .select('*')
-                .eq('email', email)
-                .eq('password', password)
+                .eq('email', email.trim())
+                .eq('password', password.trim())
                 .single();
 
-            if (error) {
-                console.error("DB Error:", error);
-                alert("Database says: " + error.message);
+            if (error || !data) {
+                alert("Login Failed: " + (error ? error.message : "User not found"));
                 btn.innerText = "ACCESS PORTAL";
-                btn.style.background = "";
-                return;
-            }
-
-            if (data) {
-                alert("Welcome, " + data.email);
+            } else {
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('app').style.display = 'flex';
                 document.getElementById('user-display').innerText = data.email;
-            } else {
-                alert("No user found with these credentials.");
-                btn.innerText = "ACCESS PORTAL";
-                btn.style.background = "";
             }
         } catch (err) {
-            console.error("CRASH:", err);
-            alert("System Crash: Check your Console (F12)");
+            alert("System Error: Check Console");
+            console.error(err);
             btn.innerText = "ACCESS PORTAL";
-            btn.style.background = "";
         }
     }
 </script>
+
+</body>
+</html>
