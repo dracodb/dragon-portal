@@ -183,17 +183,49 @@
         }
 
         async function handleExamUnlock() {
-            const key = document.getElementById('exam-key-input').value.trim();
-            if(!key) return showAlert("ENTER KEY");
+    const key = document.getElementById('exam-key-input').value.trim();
+    if(!key) return showAlert("ENTER KEY");
 
-            try {
-                const { data: exam, error } = await getClient().from('exams').select('*, exam_config(*)').eq('exam_key', key).single();
-                if(error || !exam) return showAlert("INVALID KEY");
+    try {
+        // 1. Try to fetch the exam ONLY first to see if the key exists
+        const { data: exam, error: examError } = await getClient()
+            .from('exams')
+            .select('*')
+            .eq('exam_key', key)
+            .single();
 
-                const { data: qs } = await getClient().from('questions').select('*').in('id', exam.question_ids);
-                renderQuiz(exam.title, qs);
-            } catch (err) { showAlert("LOAD FAILED"); }
+        if (examError || !exam) {
+            console.error("Exam Key Check Failed:", examError);
+            return showAlert("KEY NOT FOUND IN DATABASE");
         }
+
+        // 2. Now try to fetch the config specifically
+        const { data: config, error: configError } = await getClient()
+            .from('exam_config')
+            .select('*')
+            .eq('config_id', exam.config_id)
+            .single();
+
+        if (configError || !config) {
+            console.error("Config Link Failed:", configError);
+            return showAlert("EXAM EXISTS BUT CONFIG IS MISSING");
+        }
+
+        // 3. Finally get the questions
+        const { data: qs } = await getClient()
+            .from('questions')
+            .select('*')
+            .in('id', exam.question_ids);
+
+        // Success!
+        activeQuestions = qs;
+        startExamSession(exam.title, config.timer_minutes);
+
+    } catch (err) { 
+        console.error("System Error:", err);
+        showAlert("CRITICAL LOAD ERROR"); 
+    }
+}
 
         function renderQuiz(title, qs) {
             document.getElementById('unlock-zone').style.display = 'none';
