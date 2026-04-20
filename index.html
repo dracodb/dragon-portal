@@ -274,41 +274,45 @@
     if(btn) { btn.innerText = "RECORDING..."; btn.disabled = true; }
     clearInterval(timerInterval);
     
-    // Grab the title from the UI
-    const titleElement = document.getElementById('active-exam-title');
-    const title = titleElement ? titleElement.innerText : "Untitled Exam";
-
+    const title = document.getElementById('active-exam-title')?.innerText || "Untitled Exam";
+    
     let correct = 0;
+    let studentAnswers = {}; // To store the choice map (e.g., {"q1": "A", "q2": "C"})
+
     activeQuestions.forEach(q => {
         const sel = document.querySelector(`input[name="${q.id}"]:checked`);
-        // We compare the selected choice (e.g., 'A') to the correct_choice in the DB
-        if (sel && sel.value === q.correct_choice) correct++;
+        const val = sel ? sel.value : null;
+        
+        // 1. Map the answer for the 'answers' column
+        studentAnswers[q.id] = val;
+        
+        // 2. Score it
+        if (val === q.correct_choice) correct++;
     });
 
     const percent = ((correct / activeQuestions.length) * 100).toFixed(0);
 
     try {
-        // Send data to Supabase
         const { error } = await getClient().from('results').insert([{
-            student_email: currentUser.email, 
-            exam_key: activeExamKey,        // <--- Added the Exam Key here
+            student_email: currentUser.email,
+            student_name: currentUser.full_name, // Fixes student_name null
+            exam_key: activeExamKey,
             exam_title: title,
             score: parseInt(correct),
             total: parseInt(activeQuestions.length),
-            percentage: parseInt(percent)
+            percentage: parseInt(percent),
+            answers: studentAnswers // Fixes answers null
+            // Note: If you need config_id here, we'd need to store it 
+            // globally when the exam unlocks, similar to activeExamKey
         }]);
         
         if(error) throw error;
 
-        alert(`SUBMITTED! Score: ${correct}/${activeQuestions.length} (${percent}%)`);
+        alert(`SUCCESS! Result saved for ${currentUser.full_name}`);
         
-        // UI Cleanup
         document.getElementById('quiz-area').innerHTML = "";
         document.getElementById('unlock-zone').style.display = 'block';
         document.getElementById('page-sub').innerText = "Welcome back";
-        document.getElementById('page-sub').style.color = "var(--text-muted)";
-        
-        // Return to Dashboard
         switchTab('dashboard', document.querySelector('.nav-item'));
         
     } catch (err) { 
