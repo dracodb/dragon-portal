@@ -64,7 +64,7 @@
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.3.8</div>
+    <div class="v-tag">DRAGON_VER_1.3.9</div>
     <div id="custom-alert">ALERT</div>
 
     <div id="login-ui">
@@ -131,7 +131,7 @@
         </div>
     </div>
 
-    <script>
+  <script>
         const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
         const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
         let client = null;
@@ -197,8 +197,18 @@
             return choices.sort(() => Math.random() - 0.5);
         }
 
-        async function autoSave(qid, choice, timeLeft) {
+        // AUTO-SAVE FIXED: Now captures live time and uses correct Upsert syntax
+        async function autoSave(qid, choice) {
             if(!currentUser) return;
+            
+            // Capture live time from the topbar
+            const timeText = document.getElementById('page-sub').innerText;
+            const timeMatch = timeText.match(/\d+/g);
+            let timeLeft = 0;
+            if(timeMatch && timeMatch.length >= 2) {
+                timeLeft = (parseInt(timeMatch[0]) * 60) + parseInt(timeMatch[1]);
+            }
+
             try {
                 await getClient().from('exam_attempts').upsert({
                     student_email: currentUser.email,
@@ -206,7 +216,7 @@
                     question_id: qid,
                     selected_choice: choice,
                     remaining_time: timeLeft
-                }, { onConflict: 'student_email, exam_key, question_id' });
+                }, { onConflict: 'student_email,exam_key,question_id' });
             } catch (e) { console.error("Auto-save fail", e); }
         }
 
@@ -235,7 +245,7 @@
                 let s = time % 60;
                 sub.innerText = `TIME REMAINING: ${m}:${s < 10 ? '0' : ''}${s}`;
                 sub.style.color = time < 60 ? 'var(--red)' : 'var(--gold)';
-                if(time <= 0) { submitQuiz(title); }
+                if(time <= 0) { submitQuiz(); }
                 time--;
             }, 1000);
 
@@ -249,7 +259,7 @@
                     <p><b>${i+1}. ${q.question_text}</b></p>
                     ${shuffled.map(c => `
                         <label class="option-label">
-                            <input type="radio" name="${q.id}" value="${c.label}" onclick="autoSave('${q.id}', '${c.label}', 0)"> 
+                            <input type="radio" name="${q.id}" value="${c.label}" onclick="autoSave('${q.id}', '${c.label}')"> 
                             ${c.label}. ${c.text}
                         </label>
                     `).join('')}
@@ -274,21 +284,25 @@
             const percent = ((correct / activeQuestions.length) * 100).toFixed(0);
 
             try {
-                await getClient().from('results').insert([{
+                const { error } = await getClient().from('results').insert([{
                     student_id: currentUser.email,
                     exam_title: title,
-                    score: correct,
-                    total: activeQuestions.length,
-                    percentage: percent
+                    score: parseInt(correct),
+                    total: parseInt(activeQuestions.length),
+                    percentage: parseInt(percent)
                 }]);
                 
+                if(error) throw error;
+
                 alert(`SUBMITTED! Score: ${correct}/${activeQuestions.length} (${percent}%)`);
                 document.getElementById('quiz-area').innerHTML = "";
                 document.getElementById('unlock-zone').style.display = 'block';
                 document.getElementById('page-sub').innerText = "Welcome back";
+                document.getElementById('page-sub').style.color = "var(--text-muted)";
                 switchTab('dashboard', document.querySelector('.nav-item'));
-            } catch (err) { alert("Save Error. Take a screenshot."); }
+            } catch (err) { 
+                console.error("Result save error:", err);
+                alert("Save Error: " + err.message); 
+            }
         }
     </script>
-</body>
-</html>
