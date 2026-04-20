@@ -1,62 +1,116 @@
-<script>
-    // --- LIVE DATABASE CONNECTION ---
-    const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co"; 
-    const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
-    
-    // Initialize Supabase
-    const supabase = window.supabase.createClient(SB_URL, SB_KEY);
-
-    async function validatePortalEntry() {
-        console.log("Button clicked. Attempting to login...");
-        
-        const email = document.getElementById('student-email').value;
-        const key = document.getElementById('dragon-key').value;
-
-        if (!email || !key) {
-            alert("Please enter both email and key.");
-            return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Flaming Dragon — Student Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --red: #880b18; --red-dark: #5c0710; --gold: #ffcf00;
+            --dark: #0f0f0f; --surface: #1e1e1e; --border: rgba(255,255,255,0.08);
+            --text: #f0ede8; --text-dim: #9a9590;
+            --font-head: 'Oswald', sans-serif; --font-body: 'Montserrat', sans-serif;
         }
 
-        try {
-            // 1. Fetch the Key from Supabase
+        body { background: var(--dark); color: var(--text); font-family: var(--font-body); margin: 0; }
+        
+        /* Login Overlay */
+        #login-overlay {
+            position: fixed; inset: 0; background: var(--dark);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .login-card {
+            background: var(--surface); padding: 40px; border-radius: 20px; 
+            border: 1px solid var(--border); width: 100%; max-width: 350px; text-align: center;
+        }
+        input {
+            width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px;
+            background: #111; border: 1px solid var(--border); color: white; box-sizing: border-box;
+        }
+        .btn {
+            width: 100%; padding: 12px; border-radius: 8px; border: none;
+            background: var(--red); color: white; font-weight: bold; cursor: pointer;
+            font-family: var(--font-head); letter-spacing: 1px;
+        }
+
+        /* App Layout */
+        .app { display: none; min-height: 100vh; }
+        .sidebar { width: 240px; background: #111; border-right: 1px solid var(--border); padding: 20px; }
+        .main { flex: 1; padding: 40px; }
+        .logo-flame { width: 40px; height: 40px; background: var(--red); border-radius: 8px; margin: 0 auto 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="logo-flame"></div>
+            <h2 style="font-family: var(--font-head);">FLAMING DRAGON</h2>
+            <p style="font-size: 11px; color: var(--text-dim); margin-bottom: 20px;">STUDENT PORTAL</p>
+            <input type="email" id="email" placeholder="Email Address">
+            <input type="text" id="key" placeholder="Dragon Key">
+            <button class="btn" onclick="login()">UNLOCK PORTAL</button>
+        </div>
+    </div>
+
+    <div class="app" id="app">
+        <aside class="sidebar">
+            <h3 id="side-name" style="font-family: var(--font-head);">STUDENT</h3>
+            <p id="side-key" style="color: var(--gold); font-size: 12px;"></p>
+            <hr style="opacity: 0.1; margin: 20px 0;">
+            <p>Dashboard</p>
+            <p style="opacity: 0.5;">Exams (Coming Soon)</p>
+        </aside>
+        <main class="main">
+            <h1 id="welcome-msg" style="font-family: var(--font-head);">WELCOME</h1>
+            <div style="background: var(--surface); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+                <p>Status: <span style="color: #4ade80;">Authenticated</span></p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
+        const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
+        
+        // Error handling for library load
+        if (!window.supabase) {
+            document.body.innerHTML = "<div style='padding:50px; color:red;'>Error: Supabase library failed to load. Check internet connection.</div>";
+        }
+
+        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const key = document.getElementById('key').value;
+
+            if (!email || !key) return alert("Enter email and key");
+
+            console.log("Checking key:", key);
+
             const { data, error } = await supabase
                 .from('exam_keys')
-                .select('*, exam_configs(*)')
+                .select('*')
                 .eq('key_code', key)
                 .single();
 
             if (error) {
-                console.error("Supabase Error:", error);
-                alert("Database Error: " + error.message);
-                return;
+                console.error(error);
+                return alert("Login Failed: " + error.message);
             }
 
-            if (!data) {
-                alert("Dragon Key not found in database.");
-                return;
+            if (data) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                document.getElementById('side-name').innerText = email.split('@')[0].toUpperCase();
+                document.getElementById('welcome-msg').innerText = "WELCOME BACK, " + email.split('@')[0].toUpperCase();
+                document.getElementById('side-key').innerText = key;
+            } else {
+                alert("Key not found.");
             }
-
-            // 2. Success! Transition the UI
-            console.log("Login successful!", data);
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('main-app').style.display = 'flex';
-            
-            // 3. Update Sidebar with Student Data
-            document.getElementById('display-name').innerText = email.split('@')[0].toUpperCase();
-            document.getElementById('hero-name').innerText = email.split('@')[0];
-            document.getElementById('display-key').innerText = key;
-            document.getElementById('avatar-initials').innerText = email.charAt(0).toUpperCase();
-
-        } catch (err) {
-            console.error("Critical System Error:", err);
-            alert("System Error: Check if your Project URL is correct.");
         }
-    }
-
-    function navigate(page, btn) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('page-' + page).classList.add('active');
-        if (btn) btn.classList.add('active');
-    }
-</script>
+    </script>
+</body>
+</html>
