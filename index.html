@@ -61,7 +61,7 @@
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.3.4</div>
+    <div class="v-tag">DRAGON_VER_1.3.5</div>
     <div id="custom-alert">ALERT</div>
 
     <div id="login-ui">
@@ -131,6 +131,8 @@
         const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
         const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
         let client = null;
+        let activeQuestions = []; // Added to store questions for the session
+        let timerInterval;        // Added for the countdown
 
         function getClient() {
             if (!client) client = window.supabase.createClient(SB_URL, SB_KEY);
@@ -182,59 +184,69 @@
             document.getElementById('page-title').innerText = id.toUpperCase();
         }
 
-          async function handleExamUnlock() {
-    const key = document.getElementById('exam-key-input').value.trim();
-    if(!key) return showAlert("ENTER KEY");
+        async function handleExamUnlock() {
+            const key = document.getElementById('exam-key-input').value.trim();
+            if(!key) return showAlert("ENTER KEY");
 
-    try {
-        const db = getClient();
-        
-        // 1. Fetch Exam
-        const { data: exam, error: examError } = await db
-            .from('exams')
-            .select('*')
-            .eq('exam_key', key)
-            .single();
+            try {
+                const db = getClient();
+                
+                const { data: exam, error: examError } = await db
+                    .from('exams')
+                    .select('*')
+                    .eq('exam_key', key)
+                    .single();
 
-        if (examError) {
-            return showAlert("DB ERROR (EXAM): " + examError.message);
+                if (examError) return showAlert("DB ERROR (EXAM): " + examError.message);
+
+                const { data: config, error: configError } = await db
+                    .from('exam_config')
+                    .select('*')
+                    .eq('config_id', exam.config_id)
+                    .single();
+
+                if (configError) return showAlert("DB ERROR (CONFIG): " + configError.message);
+
+                const { data: qs, error: qError } = await db
+                    .from('questions')
+                    .select('*')
+                    .in('id', exam.question_ids);
+
+                if (qError) return showAlert("DB ERROR (QUESTIONS): " + qError.message);
+
+                activeQuestions = qs;
+                startExamSession(exam.title, config.timer_minutes);
+
+            } catch (err) { 
+                alert("CRITICAL SYSTEM ERROR: " + err.message); 
+            }
         }
 
-        // 2. Fetch Config
-        const { data: config, error: configError } = await db
-            .from('exam_config')
-            .select('*')
-            .eq('config_id', exam.config_id)
-            .single();
-
-        if (configError) {
-            return showAlert("DB ERROR (CONFIG): " + configError.message);
-        }
-
-        // 3. Fetch Questions
-        const { data: qs, error: qError } = await db
-            .from('questions')
-            .select('*')
-            .in('id', exam.question_ids);
-
-        if (qError) {
-            return showAlert("DB ERROR (QUESTIONS): " + qError.message);
-        }
-
-        // Success Sequence
-        activeQuestions = qs;
-        startExamSession(exam.title, config.timer_minutes);
-
-    } catch (err) { 
-        // This catches network issues or code typos
-        alert("CRITICAL SYSTEM ERROR: " + err.message); 
-    }
-}
-        function renderQuiz(title, qs) {
+        // Renamed from renderQuiz to startExamSession to match the call above
+        function startExamSession(title, mins) {
             document.getElementById('unlock-zone').style.display = 'none';
+            
+            // Timer Logic
+            let time = (mins || 60) * 60;
+            const sub = document.getElementById('page-sub');
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                let m = Math.floor(time / 60);
+                let s = time % 60;
+                sub.innerText = `TIME REMAINING: ${m}:${s < 10 ? '0' : ''}${s}`;
+                sub.style.color = time < 60 ? 'var(--red)' : 'var(--gold)';
+                if(time <= 0) { 
+                    clearInterval(timerInterval); 
+                    alert("TIME EXPIRED!");
+                    location.reload(); 
+                }
+                time--;
+            }, 1000);
+
             const area = document.getElementById('quiz-area');
-            area.innerHTML = `<h2 style="margin-bottom:20px;">${title}</h2>` + 
-                qs.map((q, i) => `
+            area.innerHTML = `<h2 style="margin-bottom:20px; color:var(--gold); font-family:var(--font-head);">${title}</h2>` + 
+                activeQuestions.map((q, i) => `
                 <div class="card">
                     <p><b>${i+1}. ${q.question_text}</b></p>
                     <label class="option-label"><input type="radio" name="${q.id}" value="A"> A. ${q.choice_a}</label>
@@ -242,8 +254,6 @@
                     <label class="option-label"><input type="radio" name="${q.id}" value="C"> C. ${q.choice_c}</label>
                     <label class="option-label"><input type="radio" name="${q.id}" value="D"> D. ${q.choice_d}</label>
                 </div>`).join('') + 
-                `<button class="btn-login" onclick="location.reload()">SUBMIT</button>`;
+                `<button class="btn-login" onclick="location.reload()">FINISH & SUBMIT</button>`;
         }
     </script>
-</body>
-</html>
