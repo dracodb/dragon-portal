@@ -27,12 +27,13 @@
         .login-card { background: var(--surface); padding: 40px; border-radius: 24px; border: 1px solid var(--border); width: 340px; text-align: center; }
         .input-group { position: relative; margin-bottom: 15px; }
         .input-dark { background: #111; border: 1px solid var(--border); color: white; padding: 14px; border-radius: 10px; width: 100%; box-sizing: border-box; outline: none; }
-        .toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: 10px; cursor: pointer; font-weight: bold; }
+        .toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: 10px; cursor: pointer; font-weight: bold; background: none; border: none; }
         .btn-login { background: var(--red); color: white; padding: 14px; border-radius: 10px; border: none; font-family: var(--font-head); font-weight: 600; cursor: pointer; width: 100%; text-transform: uppercase; transition: 0.2s; }
+        .btn-login:hover { background: var(--red-light); }
         .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* ── CUSTOM ALERT ── */
-        #custom-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--red); color: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--gold); z-index: 9000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 600; font-family: var(--font-head); }
+        #custom-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--red); color: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--gold); z-index: 9000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 600; font-family: var(--font-head); pointer-events: none;}
         #custom-alert.show { transform: translateX(-50%) translateY(0); }
 
         /* ── APP LAYOUT ── */
@@ -57,9 +58,6 @@
         .page.active { display: block; }
         
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px; position: relative; overflow: hidden; }
-        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); opacity: 0.5; }
         
         /* Quiz Styling */
         .option-label { display: block; background: var(--dark3); padding: 12px; border-radius: 8px; margin-top: 8px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
@@ -69,7 +67,7 @@
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.3.1_MOCK</div>
+    <div class="v-tag">DRAGON_VER_1.3.2_STABLE</div>
     <div id="custom-alert">INCORRECT CREDENTIALS</div>
 
     <div id="login-ui">
@@ -81,7 +79,7 @@
             </div>
             <div class="input-group">
                 <input type="password" id="pass" class="input-dark" placeholder="Password">
-                <div class="toggle-btn" onclick="localToggle()">SHOW</div>
+                <button class="toggle-btn" onclick="localToggle(event)">SHOW</button>
             </div>
             <button class="btn-login" id="login-btn" onclick="localLogin()">Access Portal</button>
         </div>
@@ -116,12 +114,6 @@
 
             <div class="page-content">
                 <div id="tab-dashboard" class="page active">
-                    <div class="stat-grid">
-                        <div class="stat-card">
-                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Overall Avg</div>
-                            <div style="font-family:var(--font-head); font-size:28px; font-weight:700; color:var(--gold);">--%</div>
-                        </div>
-                    </div>
                     <div class="card">
                         <h3>Mock System Status: Active</h3>
                         <p style="color:var(--text-dim); margin-top:8px;">Head to the Exams tab and enter your key to begin.</p>
@@ -149,6 +141,7 @@
     </div>
 
     <script>
+        // 1. Supabase Initialization
         const SB_URL = "https://ppznrqnfzqjxguprjvto.supabase.co";
         const SB_KEY = "sb_publishable_e3ViwxIi3qebbHQVHGzGJg_jhzwYENd";
         const supabase = window.supabase.createClient(SB_URL, SB_KEY);
@@ -162,20 +155,28 @@
             setTimeout(() => a.classList.remove('show'), 3000);
         }
 
-        function localToggle() {
+        // 2. Auth & UI Functions
+        function localToggle(e) {
+            e.preventDefault();
             const p = document.getElementById('pass');
-            p.type = p.type === 'password' ? 'text' : 'password';
-            event.target.innerText = p.type === 'password' ? 'SHOW' : 'HIDE';
+            const btn = e.target;
+            if (p.type === 'password') {
+                p.type = 'text';
+                btn.innerText = 'HIDE';
+            } else {
+                p.type = 'password';
+                btn.innerText = 'SHOW';
+            }
         }
 
         function switchTab(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
+            const targetPage = document.getElementById('tab-' + id);
+            if(targetPage) targetPage.classList.add('active');
             if(el) el.classList.add('active');
             document.getElementById('page-title').innerText = id.toUpperCase();
             
-            // Clean up if leaving exams
             if(id !== 'exams') {
                 clearInterval(timerInterval);
                 document.getElementById('page-sub').innerText = "Welcome back";
@@ -185,42 +186,52 @@
 
         async function localLogin() {
             const btn = document.getElementById('login-btn');
-            const e = document.getElementById('email').value.trim();
-            const p = document.getElementById('pass').value.trim();
-            if (!e || !p) return showAlert("FILL ALL FIELDS");
+            const eVal = document.getElementById('email').value.trim();
+            const pVal = document.getElementById('pass').value.trim();
+
+            if (!eVal || !pVal) return showAlert("FILL ALL FIELDS");
             
             btn.innerText = "VERIFYING..."; btn.disabled = true;
 
             try {
-                const { data, error } = await supabase.from('users').select('*').eq('email', e).eq('password', p).limit(1);
+                const { data, error } = await supabase.from('users').select('*').eq('email', eVal).eq('password', pVal).limit(1);
+                
+                if (error) throw error;
+
                 if (data && data.length > 0) {
+                    const user = data[0];
                     document.getElementById('login-ui').style.display = 'none';
                     document.getElementById('app-portal').style.display = 'flex';
-                    document.getElementById('stu-name').innerText = data[0].full_name;
-                    document.getElementById('stu-email').innerText = data[0].email;
-                    document.getElementById('stu-initials').innerText = data[0].full_name.charAt(0);
+                    document.getElementById('stu-name').innerText = user.full_name || "CANDIDATE";
+                    document.getElementById('stu-email').innerText = user.email;
+                    document.getElementById('stu-initials').innerText = (user.full_name || "C").charAt(0).toUpperCase();
                 } else {
                     showAlert("ACCESS DENIED");
                     btn.innerText = "ACCESS PORTAL"; btn.disabled = false;
                 }
-            } catch (err) { showAlert("DB ERROR"); btn.disabled = false; }
+            } catch (err) { 
+                console.error(err);
+                showAlert("DB CONNECTION ERROR"); 
+                btn.innerText = "ACCESS PORTAL"; btn.disabled = false; 
+            }
         }
 
+        // 3. Exam System Logic
         async function handleExamUnlock() {
             const key = document.getElementById('exam-key-input').value.trim();
             if(!key) return showAlert("ENTER KEY");
 
             try {
-                // 1. Get Exam + Config (The Blueprint)
+                // Fetch Playlist + Linked Config
                 const { data: exam, error } = await supabase
                     .from('exams')
                     .select('*, exam_config(*)')
                     .eq('exam_key', key)
                     .single();
 
-                if(error || !exam) return showAlert("INVALID KEY");
+                if(error || !exam) return showAlert("INVALID EXAM KEY");
 
-                // 2. Get the Questions (The Data)
+                // Fetch Questions
                 const { data: qs, error: qError } = await supabase
                     .from('questions')
                     .select('*')
@@ -237,9 +248,10 @@
             document.getElementById('unlock-zone').style.display = 'none';
             
             // Start Countdown
-            let time = mins * 60;
+            let time = (mins || 60) * 60;
             const sub = document.getElementById('page-sub');
             
+            clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 let m = Math.floor(time / 60);
                 let s = time % 60;
@@ -249,7 +261,7 @@
                 time--;
             }, 1000);
 
-            // Render Questions
+            // Render UI
             const area = document.getElementById('quiz-area');
             area.innerHTML = `
                 <h2 style="font-family:var(--font-head); margin-bottom:20px;">${title}</h2>
@@ -262,13 +274,13 @@
                         <label class="option-label"><input type="radio" name="${q.id}" value="D"> D. ${q.choice_d}</label>
                     </div>
                 `).join('')}
-                <button class="btn-login" onclick="submitQuiz()">FINISH & SUBMIT</button>
+                <button class="btn-login" style="margin-top:20px;" onclick="submitQuiz()">FINISH & SUBMIT</button>
             `;
         }
 
         function submitQuiz() {
             clearInterval(timerInterval);
-            showAlert("EXAM SUBMITTED SUCCESSFULLY");
+            showAlert("EXAM SUBMITTED!");
             document.getElementById('quiz-area').innerHTML = "";
             document.getElementById('unlock-zone').style.display = 'block';
             switchTab('dashboard', document.querySelector('.nav-item'));
