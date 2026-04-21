@@ -18,9 +18,8 @@
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { background: var(--dark); color: var(--text); font-family: var(--font-body); font-size: 16px; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+        html, body { background: var(--dark); color: var(--text); font-family: var(--font-body); font-size: 16px; min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
-        /* ── MOBILE READABILITY ── */
         h2 { font-size: 1.8rem; }
         p { line-height: 1.6; }
 
@@ -38,11 +37,10 @@
         #custom-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--red); color: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--gold); z-index: 9000; transition: 0.4s; font-weight: 600; font-family: var(--font-head); width: 90%; text-align: center; }
         #custom-alert.show { transform: translateX(-50%) translateY(0); }
 
-        /* ── APP LAYOUT ── */
         .app { display: none; min-height: 100vh; }
         .sidebar { width: var(--sidebar-w); background: var(--dark2); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; transition: transform 0.3s ease; }
         
-        /* HIDE SIDEBAR DURING EXAM */
+        /* SIDEBAR TOGGLE LOGIC */
         body.in-exam .sidebar { transform: translateX(-100%); }
         body.in-exam .main { margin-left: 0; }
 
@@ -55,42 +53,39 @@
         .sidebar-student { padding: 20px; border-bottom: 1px solid var(--border); }
         .student-avatar { width: 50px; height: 50px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--gold); border: 2px solid var(--red-light); margin-bottom: 12px;}
 
-        .nav-item { display: flex; align-items: center; padding: 16px 20px; color: var(--text-dim); cursor: pointer; transition: 0.15s; font-size: 15px; font-weight: 600; border: none; background: none; width: 100%; text-align: left; }
-        .nav-item.active { color: var(--gold); background: rgba(136,11,24,0.3); border-left: 4px solid var(--gold); }
+        .nav-item { display: flex; align-items: center; padding: 18px 20px; color: var(--text-dim); cursor: pointer; transition: 0.15s; font-size: 16px; font-weight: 600; border: none; background: none; width: 100%; text-align: left; }
+        .nav-item.active { color: var(--gold); background: rgba(136,11,24,0.3); border-left: 5px solid var(--gold); }
 
         .topbar { height: var(--nav-h); background: var(--dark2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; position: sticky; top: 0; z-index: 50; }
         
-        /* ── BIG TIMER STYLE ── */
-        #timer-display { font-family: var(--font-head); font-size: 28px; font-weight: 700; text-align: center; width: 100%; display: none; }
+        #timer-display { font-family: var(--font-head); font-size: 32px; font-weight: 700; text-align: center; width: 100%; display: none; letter-spacing: 2px; }
         
-        .page-content { padding: 20px 15px; flex: 1; max-width: 800px; margin: 0 auto; width: 100%; }
+        .page-content { padding: 25px 15px; flex: 1; max-width: 800px; margin: 0 auto; width: 100%; }
         .page { display: none; }
         .page.active { display: block; }
         
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 25px 20px; margin-bottom: 20px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 30px 20px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
         
-        /* BIG TAP TARGETS FOR OPTIONS */
-        .option-label { display: flex; align-items: center; background: var(--dark3); padding: 18px; border-radius: 12px; margin-top: 12px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; font-size: 16px; }
+        .option-label { display: flex; align-items: center; background: var(--dark3); padding: 20px; border-radius: 14px; margin-top: 15px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; font-size: 17px; font-weight: 500; }
         .option-label:active { background: var(--dark4); border-color: var(--gold); }
-        .option-label input { width: 22px; height: 22px; margin-right: 15px; accent-color: var(--gold); flex-shrink: 0; }
+        .option-label input { width: 26px; height: 26px; margin-right: 18px; accent-color: var(--gold); flex-shrink: 0; }
 
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .main { margin-left: 0; }
             body.menu-open .sidebar { transform: translateX(0); }
-            .topbar { justify-content: space-between; }
         }
     </style>
 </head>
-<body class="">
+<body>
 
-    <div class="v-tag">DRAGON_VER_1.4.0</div>
+    <div class="v-tag">DRAGON_VER_1.4.1</div>
     <div id="custom-alert">ALERT</div>
 
     <div id="login-ui">
         <div class="login-card">
             <div class="logo-flame"></div>
-            <h1 style="font-family: var(--font-head); margin: 15px 0; font-size: 24px;">FLAMING DRAGON</h1>
+            <h1 style="font-family: var(--font-head); margin: 15px 0; font-size: 28px;">FLAMING DRAGON</h1>
             <div class="input-group">
                 <input type="email" id="email" class="input-dark" placeholder="Email Address" inputmode="email">
             </div>
@@ -110,8 +105,8 @@
             </div>
             <div class="sidebar-student">
                 <div class="student-avatar" id="stu-initials">?</div>
-                <div class="student-name" id="stu-name" style="font-weight:700;">CANDIDATE</div>
-                <div id="stu-email" style="font-size:12px; color:var(--gold); margin-top:4px;">email@example.com</div>
+                <div class="student-name" id="stu-name" style="font-weight:700; font-size: 18px;">CANDIDATE</div>
+                <div id="stu-email" style="font-size:13px; color:var(--gold); margin-top:4px;">email@example.com</div>
             </div>
             <nav style="flex:1; padding-top:10px;">
                 <button class="nav-item active" onclick="switchTab('dashboard', this)">Dashboard</button>
@@ -124,8 +119,8 @@
         <div class="main">
             <header class="topbar">
                 <div id="header-text" style="flex:1">
-                    <div style="font-family:var(--font-head); font-size:20px; font-weight:600; text-transform:uppercase;" id="page-title">DASHBOARD</div>
-                    <div style="font-size:13px; color:var(--text-muted);" id="page-sub">Welcome back</div>
+                    <div style="font-family:var(--font-head); font-size:22px; font-weight:600; text-transform:uppercase;" id="page-title">DASHBOARD</div>
+                    <div style="font-size:14px; color:var(--text-muted);" id="page-sub">Welcome back</div>
                 </div>
                 <div id="timer-display">00:00</div>
             </header>
@@ -133,17 +128,17 @@
             <div class="page-content">
                 <div id="tab-dashboard" class="page active">
                     <div class="card">
-                        <h3 style="margin-bottom:10px; color:var(--gold);">Portal Status: Ready</h3>
-                        <p>Select the <b>Exams</b> tab in the menu to begin your session.</p>
+                        <h3 style="margin-bottom:12px; color:var(--gold); font-size: 20px;">Portal Status: Ready</h3>
+                        <p style="font-size: 17px;">Please select the <b>Exams</b> tab from the menu to unlock and begin your test.</p>
                     </div>
                 </div>
 
                 <div id="tab-exams" class="page">
                     <div id="unlock-zone">
                         <div class="card">
-                            <h2 style="font-family:var(--font-head); margin-bottom:15px;">EXAM UNLOCK</h2>
-                            <input type="text" id="exam-key-input" class="input-dark" style="margin-bottom:15px" placeholder="Enter Exam Key">
-                            <button class="btn-login" onclick="handleExamUnlock()">Start Exam</button>
+                            <h2 style="font-family:var(--font-head); margin-bottom:20px;">EXAM UNLOCK</h2>
+                            <input type="text" id="exam-key-input" class="input-dark" style="margin-bottom:20px; font-size: 18px;" placeholder="Enter Exam Key">
+                            <button class="btn-login" onclick="handleExamUnlock()">Unlock Exam</button>
                         </div>
                     </div>
                     <div id="quiz-area"></div>
@@ -152,7 +147,7 @@
                 <div id="tab-results" class="page">
                     <div id="results-list" class="card">
                         <h2 style="font-family:var(--font-head); color:var(--gold); margin-bottom:15px;">MY RECORDS</h2>
-                        <p style="color:var(--text-dim);">Loading...</p>
+                        <p>Loading...</p>
                     </div>
                 </div>
 
@@ -192,7 +187,7 @@
     }
 
     function switchTab(id, el) {
-        document.body.classList.remove('in-exam'); // Reset exam UI
+        document.body.classList.remove('in-exam'); 
         document.getElementById('timer-display').style.display = 'none';
         document.getElementById('header-text').style.display = 'block';
         
@@ -208,26 +203,27 @@
         const list = document.getElementById('results-list');
         try {
             const { data } = await getClient().from('results').select('*').eq('student_email', currentUser.email).order('id', { ascending: false });
-            let html = '<h2 style="font-family:var(--font-head); color:var(--gold); margin-bottom:15px;">MY RECORDS</h2>';
+            let html = '<h2 style="font-family:var(--font-head); color:var(--gold); margin-bottom:20px;">MY RECORDS</h2>';
             if (!data?.length) { html += '<p>No records found.</p>'; } 
             else {
                 data.forEach(r => {
                     html += `
-                    <div style="padding:15px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div style="font-weight:700;">${r.exam_title}</div>
-                            <div style="font-size:12px; color:var(--text-dim);">${r.score}/${r.total} - ${r.percentage}%</div>
+                    <div style="padding:20px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                        <div style="flex:1;">
+                            <div style="font-weight:700; font-size:18px;">${r.exam_title}</div>
+                            <div style="font-size:14px; color:var(--text-dim); margin-top:4px;">Score: ${r.score}/${r.total} (${r.percentage}%)</div>
                         </div>
-                        <button class="btn-login" style="width:auto; padding:8px 12px; font-size:12px;" onclick="viewExamDetails('${r.key_used}', ${JSON.stringify(r.answers).replace(/"/g, '&quot;')})">REVIEW</button>
+                        <button class="btn-login" style="width:auto; padding:10px 18px; font-size:14px;" onclick="viewExamDetails('${r.key_used}', ${JSON.stringify(r.answers).replace(/"/g, '&quot;')})">REVIEW</button>
                     </div>`;
                 });
             }
             list.innerHTML = html;
-        } catch (e) { list.innerHTML = '<p>Error loading.</p>'; }
+        } catch (e) { list.innerHTML = '<p>Error loading records.</p>'; }
     }
 
     async function handleExamUnlock() {
         const key = document.getElementById('exam-key-input').value.trim();
+        if(!key) return showAlert("ENTER KEY");
         try {
             const { data: exam, error } = await getClient().from('exams').select('*').eq('exam_key', key).single();
             if (error) return showAlert("KEY NOT FOUND");
@@ -255,15 +251,17 @@
             if(time-- <= 0) submitQuiz();
         }, 1000);
 
-        let html = `<h2 style="color:var(--gold); font-family:var(--font-head); margin-bottom:20px;">${title}</h2>`;
+        let html = `<h2 style="color:var(--gold); font-family:var(--font-head); margin-bottom:25px; text-align:center; font-size:26px;">${title}</h2>`;
         activeQuestions.forEach((q, i) => {
-            html += `<div class="card"><p style="font-size:18px; font-weight:700; margin-bottom:15px;">${i+1}. ${q.question_text}</p>
+            html += `<div class="card"><p style="font-size:20px; font-weight:700; margin-bottom:20px; line-height:1.4;">${i+1}. ${q.question_text}</p>
                 ${['A','B','C','D'].map(l => `<label class="option-label"><input type="radio" name="${q.id}" value="${l}" onclick="autoSave('${q.id}','${l}')"> ${q['choice_'+l.toLowerCase()]}</label>`).join('')}</div>`;
         });
-        document.getElementById('quiz-area').innerHTML = html + `<button id="submit-btn" class="btn-login" onclick="submitQuiz()">Submit Exam</button>`;
+        document.getElementById('quiz-area').innerHTML = html + `<button id="submit-btn" class="btn-login" style="margin-top:20px;" onclick="submitQuiz()">Submit Final Answers</button>`;
+        window.scrollTo(0,0);
     }
 
     async function submitQuiz() {
+        if(!confirm("Are you sure you want to submit your exam?")) return;
         clearInterval(timerInterval);
         const title = document.querySelector('#quiz-area h2').innerText;
         let correct = 0, answers = {};
@@ -280,8 +278,13 @@
                 exam_title: title, score: correct, total: activeQuestions.length,
                 percentage: percent, answers: answers 
             }]);
-            showAlert("RESULTS SAVED");
-            location.reload(); 
+            showAlert("EXAM SUBMITTED");
+            
+            // CLEANUP UI WITHOUT RELOAD
+            document.body.classList.remove('in-exam');
+            document.getElementById('quiz-area').innerHTML = "";
+            document.getElementById('unlock-zone').style.display = 'block';
+            switchTab('results');
         } catch (e) { showAlert("SAVE ERROR"); }
     }
 
@@ -293,18 +296,19 @@
             const { data: qs } = await getClient().from('questions').select('*').in('id', exam.question_ids);
             const orderedQs = exam.question_ids.map(id => qs.find(q => q.id === id)).filter(q => q);
 
-            let html = `<h2 style="color:var(--gold); font-family:var(--font-head); margin-bottom:20px;">REVIEW</h2>`;
+            let html = `<h2 style="color:var(--gold); font-family:var(--font-head); margin-bottom:20px;">EXAM REVIEW</h2>`;
             orderedQs.forEach((q, i) => {
                 const choice = savedAnswers[q.id], isCorrect = choice === q.correct_choice;
-                html += `<div class="card" style="border-left: 6px solid ${isCorrect ? '#4caf50' : 'var(--red)'}">
-                    <p style="font-weight:700; margin-bottom:10px;">${i+1}. ${q.question_text}</p>
+                html += `<div class="card" style="border-left: 8px solid ${isCorrect ? '#4caf50' : 'var(--red)'}">
+                    <p style="font-weight:700; font-size:18px; margin-bottom:15px;">${i+1}. ${q.question_text}</p>
                     ${['A','B','C','D'].map(l => {
                         let style = q.correct_choice === l ? 'color:#4caf50; font-weight:700;' : (choice === l ? 'color:var(--red-light); text-decoration:line-through;' : 'color:var(--text-dim);');
-                        return `<p style="padding:5px 0; ${style}">${l}. ${q['choice_'+l.toLowerCase()]} ${q.correct_choice === l ? '✔️' : ''} ${choice === l ? '(You)' : ''}</p>`;
+                        return `<p style="padding:8px 0; font-size:16px; ${style}">${l}. ${q['choice_'+l.toLowerCase()]} ${q.correct_choice === l ? '✔️' : ''} ${choice === l ? '(You)' : ''}</p>`;
                     }).join('')}
                 </div>`;
             });
-            area.innerHTML = html + `<button class="btn-login" onclick="switchTab('results')">Back to Records</button>`;
+            area.innerHTML = html + `<button class="btn-login" onclick="switchTab('results')">Back to Results</button>`;
+            window.scrollTo(0,0);
         } catch (e) { showAlert("REVIEW ERROR"); }
     }
 
@@ -316,6 +320,10 @@
             }, { onConflict: 'student_email,exam_key,question_id' });
         } catch (e) {}
     }
+
+    window.onbeforeunload = function() {
+        if (document.body.classList.contains('in-exam')) return "Exam in progress. Exit anyway?";
+    };
 </script>
 </body>
 </html>
