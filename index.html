@@ -215,6 +215,7 @@
                             <th style="padding:12px 8px;">Exam</th>
                             <th style="padding:12px 8px;">Score</th>
                             <th style="padding:12px 8px;">%</th>
+                            <th style="padding:12px 8px;">Review</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -223,6 +224,9 @@
                                 <td style="padding:12px 8px;">${r.exam_title}<br><small style="color:var(--text-muted)">${r.key_used}</small></td>
                                 <td style="padding:12px 8px;">${r.score} / ${r.total}</td>
                                 <td style="padding:12px 8px; font-weight:bold; color:${r.percentage >= 70 ? '#4caf50' : 'var(--red-light)'}">${r.percentage}%</td>
+                                <td style="padding:12px 8px;">
+                                    <button class="btn-login" style="padding:5px 10px; font-size:10px; width:auto;" onclick="viewExamDetails('${r.key_used}', ${JSON.stringify(r.answers).replace(/"/g, '&quot;')})">VIEW</button>
+                                </td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -231,6 +235,46 @@
             list.innerHTML = html;
         } catch (err) {
             list.innerHTML = '<h2 style="font-family:var(--font-head); color:var(--gold); margin-bottom:15px;">MY RESULTS</h2><p style="color:var(--red);">Error loading records.</p>';
+        }
+    }
+
+    async function viewExamDetails(key, savedAnswers) {
+        const area = document.getElementById('quiz-area');
+        area.innerHTML = '<div class="card"><p>Re-hydrating exam data...</p></div>';
+        switchTab('exams');
+        document.getElementById('unlock-zone').style.display = 'none';
+
+        try {
+            const db = getClient();
+            const { data: exam } = await db.from('exams').select('question_ids, title').eq('exam_key', key).single();
+            const { data: qs } = await db.from('questions').select('*').in('id', exam.question_ids);
+
+            let html = `<h2 style="color:var(--gold); margin-bottom:20px; font-family:var(--font-head);">REVIEW: ${exam.title}</h2>`;
+            
+            // Map the questions back to the original order from the exam record
+            const orderedQs = exam.question_ids.map(id => qs.find(q => q.id === id));
+
+            orderedQs.forEach((q, i) => {
+                if(!q) return;
+                const studentChoice = savedAnswers[q.id];
+                const isCorrect = studentChoice === q.correct_choice;
+
+                html += `
+                <div class="card" style="border-left: 5px solid ${isCorrect ? '#4caf50' : 'var(--red)'}">
+                    <p style="margin-bottom:10px;"><b>${i+1}. ${q.question_text}</b></p>
+                    <div style="font-size:13px; line-height:1.6;">
+                        <p style="${q.correct_choice === 'A' ? 'color:#4caf50; font-weight:600;' : ''} ${studentChoice === 'A' && !isCorrect ? 'color:var(--red-light); text-decoration:line-through;' : ''}">A. ${q.choice_a} ${q.correct_choice === 'A' ? '✔️' : ''} ${studentChoice === 'A' ? ' (You)' : ''}</p>
+                        <p style="${q.correct_choice === 'B' ? 'color:#4caf50; font-weight:600;' : ''} ${studentChoice === 'B' && !isCorrect ? 'color:var(--red-light); text-decoration:line-through;' : ''}">B. ${q.choice_b} ${q.correct_choice === 'B' ? '✔️' : ''} ${studentChoice === 'B' ? ' (You)' : ''}</p>
+                        <p style="${q.correct_choice === 'C' ? 'color:#4caf50; font-weight:600;' : ''} ${studentChoice === 'C' && !isCorrect ? 'color:var(--red-light); text-decoration:line-through;' : ''}">C. ${q.choice_c} ${q.correct_choice === 'C' ? '✔️' : ''} ${studentChoice === 'C' ? ' (You)' : ''}</p>
+                        <p style="${q.correct_choice === 'D' ? 'color:#4caf50; font-weight:600;' : ''} ${studentChoice === 'D' && !isCorrect ? 'color:var(--red-light); text-decoration:line-through;' : ''}">D. ${q.choice_d} ${q.correct_choice === 'D' ? '✔️' : ''} ${studentChoice === 'D' ? ' (You)' : ''}</p>
+                    </div>
+                </div>`;
+            });
+
+            area.innerHTML = html + `<button class="btn-login" style="margin-top:20px;" onclick="location.reload()">CLOSE REVIEW</button>`;
+        } catch (err) {
+            console.error(err);
+            showAlert("REVIEW LOAD FAILED");
         }
     }
 
