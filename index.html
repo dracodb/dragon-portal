@@ -33,6 +33,19 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
+        /* HAMBURGER BUTTON STYLE */
+        #mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 32px;
+            margin-right: 15px;
+            cursor: pointer;
+            z-index: 1101;
+            padding: 5px;
+        }
+
         #timer-display { font-family: var(--font-head); font-size: 32px; font-weight: 700; text-align: center; width: 100%; display: none; letter-spacing: 2px; }
 
         .v-tag { position: fixed; bottom: 10px; right: 10px; font-family: monospace; font-size: 10px; color: var(--gold); z-index: 9999; opacity: 0.5; background: #000; padding: 4px; border: 1px solid var(--border); }
@@ -52,8 +65,9 @@
         .app { display: none; min-height: 100vh; }
         .sidebar { width: var(--sidebar-w); background: var(--dark2); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 1100; transition: transform 0.3s ease; }
         
-        body.in-exam .sidebar { transform: translateX(-100%); }
-        body.in-exam .main { margin-left: 0; }
+        body.in-exam .sidebar { transform: translateX(-100%) !important; }
+        body.in-exam .main { margin-left: 0 !important; }
+        body.in-exam #mobile-menu-btn { display: none !important; }
 
         .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; transition: margin 0.3s ease; }
         
@@ -80,12 +94,14 @@
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .main { margin-left: 0; }
+            #mobile-menu-btn { display: block; }
+            body.menu-open .sidebar { transform: translateX(0); box-shadow: 10px 0 30px rgba(0,0,0,0.8); }
         }
     </style>
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.4.6</div>
+    <div class="v-tag">DRAGON_VER_1.4.7</div>
     <div id="custom-alert">ALERT</div>
 
     <div id="login-ui">
@@ -124,6 +140,7 @@
 
         <div class="main">
             <header class="topbar">
+                <button id="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <div id="header-text" style="flex:1">
                     <div style="font-family:var(--font-head); font-size:22px; font-weight:600; text-transform:uppercase;" id="page-title">DASHBOARD</div>
                     <div style="font-size:14px; color:var(--text-muted);" id="page-sub">Welcome back</div>
@@ -172,6 +189,9 @@
     function getClient() { if (!client) client = window.supabase.createClient(SB_URL, SB_KEY); return client; }
     function showAlert(msg) { const a = document.getElementById('custom-alert'); a.innerText = msg; a.classList.add('show'); setTimeout(() => a.classList.remove('show'), 3000); }
     function localToggle(e) { if(e) e.preventDefault(); const p = document.getElementById('pass'); e.target.innerText = p.type === 'password' ? 'HIDE' : 'SHOW'; p.type = p.type === 'password' ? 'text' : 'password'; }
+    
+    // NEW TOGGLE FUNCTION
+    function toggleSidebar() { document.body.classList.toggle('menu-open'); }
 
     function shuffleChoices(q) {
         let choices = [
@@ -201,6 +221,7 @@
     }
 
     function switchTab(id, el) {
+        document.body.classList.remove('menu-open'); // Close menu when tab clicked
         document.body.classList.remove('in-exam'); 
         document.getElementById('timer-display').style.display = 'none';
         document.getElementById('header-text').style.display = 'block';
