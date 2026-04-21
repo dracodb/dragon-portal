@@ -61,7 +61,7 @@
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.3.14</div>
+    <div class="v-tag">DRAGON_VER_1.3.15</div>
     <div id="custom-alert">ALERT</div>
 
     <div id="login-ui">
@@ -332,21 +332,28 @@
         } catch (e) { console.error("Auto-save fail", e); }
     }
 
-    async function handleExamUnlock() {
-        const key = document.getElementById('exam-key-input').value.trim();
-        if(!key) return showAlert("ENTER KEY");
-        try {
-            const db = getClient();
-            const { data: exam, error: examError } = await db.from('exams').select('*').eq('exam_key', key).single();
-            if (examError) return showAlert("KEY NOT FOUND");
-            activeExamKey = key;
-            activeConfigId = exam.config_id; 
-            const { data: config } = await db.from('exam_config').select('*').eq('config_id', exam.config_id).single();
-            const { data: qs } = await db.from('questions').select('*').in('id', exam.question_ids);
-            activeQuestions = qs;
-            startExamSession(exam.title, config.timer_minutes);
-        } catch (err) { alert("LOAD ERROR: " + err.message); }
-    }
+   async function handleExamUnlock() {
+    const key = document.getElementById('exam-key-input').value.trim();
+    if(!key) return showAlert("ENTER KEY");
+    try {
+        const db = getClient();
+        const { data: exam, error: examError } = await db.from('exams').select('*').eq('exam_key', key).single();
+        if (examError) return showAlert("KEY NOT FOUND");
+        
+        activeExamKey = key;
+        activeConfigId = exam.config_id; 
+        
+        const { data: config } = await db.from('exam_config').select('*').eq('config_id', exam.config_id).single();
+        
+        // 1. Fetch questions based on the exam's array
+        const { data: qs } = await db.from('questions').select('*').in('id', exam.question_ids);
+        
+        // 2. CRITICAL: Re-sort questions to match the exact order in exam.question_ids
+        activeQuestions = exam.question_ids.map(id => qs.find(q => q.id === id)).filter(q => q !== undefined);
+        
+        startExamSession(exam.title, config.timer_minutes);
+    } catch (err) { alert("LOAD ERROR: " + err.message); }
+}
 
     function startExamSession(title, mins) {
         document.getElementById('unlock-zone').style.display = 'none';
