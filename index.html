@@ -40,7 +40,6 @@
         .app { display: none; min-height: 100vh; }
         .sidebar { width: var(--sidebar-w); background: var(--dark2); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; transition: transform 0.3s ease; }
         
-        /* SIDEBAR TOGGLE LOGIC */
         body.in-exam .sidebar { transform: translateX(-100%); }
         body.in-exam .main { margin-left: 0; }
 
@@ -73,13 +72,12 @@
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .main { margin-left: 0; }
-            body.menu-open .sidebar { transform: translateX(0); }
         }
     </style>
 </head>
 <body>
 
-    <div class="v-tag">DRAGON_VER_1.4.1</div>
+    <div class="v-tag">DRAGON_VER_1.4.3</div>
     <div id="custom-alert">ALERT</div>
 
     <div id="login-ui">
@@ -190,7 +188,6 @@
         document.body.classList.remove('in-exam'); 
         document.getElementById('timer-display').style.display = 'none';
         document.getElementById('header-text').style.display = 'block';
-        
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('tab-' + id).classList.add('active');
@@ -202,6 +199,7 @@
     async function loadResults() {
         const list = document.getElementById('results-list');
         try {
+            // SORTED: Last attempt first using .order('id', { ascending: false })
             const { data } = await getClient().from('results').select('*').eq('student_email', currentUser.email).order('id', { ascending: false });
             let html = '<h2 style="font-family:var(--font-head); color:var(--gold); margin-bottom:20px;">MY RECORDS</h2>';
             if (!data?.length) { html += '<p>No records found.</p>'; } 
@@ -241,7 +239,6 @@
         document.getElementById('header-text').style.display = 'none';
         const timerEl = document.getElementById('timer-display');
         timerEl.style.display = 'block';
-
         let time = mins * 60;
         clearInterval(timerInterval);
         timerInterval = setInterval(() => {
@@ -279,8 +276,6 @@
                 percentage: percent, answers: answers 
             }]);
             showAlert("EXAM SUBMITTED");
-            
-            // CLEANUP UI WITHOUT RELOAD
             document.body.classList.remove('in-exam');
             document.getElementById('quiz-area').innerHTML = "";
             document.getElementById('unlock-zone').style.display = 'block';
@@ -295,7 +290,6 @@
             const { data: exam } = await getClient().from('exams').select('question_ids, title').eq('exam_key', key).single();
             const { data: qs } = await getClient().from('questions').select('*').in('id', exam.question_ids);
             const orderedQs = exam.question_ids.map(id => qs.find(q => q.id === id)).filter(q => q);
-
             let html = `<h2 style="color:var(--gold); font-family:var(--font-head); margin-bottom:20px;">EXAM REVIEW</h2>`;
             orderedQs.forEach((q, i) => {
                 const choice = savedAnswers[q.id], isCorrect = choice === q.correct_choice;
